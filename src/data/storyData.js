@@ -1258,3 +1258,212 @@ export const chapters = [
     isFinalChapter: true
   }
 ]
+
+export const fakeClues = [
+  {
+    id: 'fc1',
+    sceneId: 'station',
+    name: '模糊的身影',
+    description: '雾气中似乎有一个身影在向你招手...',
+    fakeText: '"你终于来了..."她的声音若隐若现。你快步走过去，却发现只是路灯的光影交错。雾气又浓了几分。',
+    position: { x: 45, y: 35 },
+    size: { width: 10, height: 15 },
+    icon: '👤',
+    timeCost: 5,
+    moodEffect: -3,
+    visiblePeriods: ['dawn', 'dusk', 'night'],
+    type: 'mirage'
+  },
+  {
+    id: 'fc2',
+    sceneId: 'station',
+    name: '废弃的票根',
+    description: '角落里有一张皱巴巴的纸片，会是她留下的吗？',
+    fakeText: '你小心翼翼地捡起那张纸片，满怀期待地展开。却只是一张过期的广告宣传单，上面写着"雾城特色小吃，买二送一"。你无奈地叹了口气。',
+    position: { x: 30, y: 78 },
+    size: { width: 8, height: 6 },
+    icon: '📄',
+    timeCost: 3,
+    moodEffect: -1,
+    visiblePeriods: ['dawn', 'day', 'dusk', 'night'],
+    type: 'trash'
+  },
+  {
+    id: 'fc3',
+    sceneId: 'street',
+    name: '熟悉的背影',
+    description: '街角有个背影，和她好像...',
+    fakeText: '你心跳加速，快步追上去。"等等！"那人回过头，却是一张完全陌生的脸。"你认错人了。"对方有些疑惑地看着你。你尴尬地道歉，心里一阵失落。',
+    position: { x: 55, y: 30 },
+    size: { width: 8, height: 18 },
+    icon: '🚶',
+    timeCost: 6,
+    moodEffect: -5,
+    visiblePeriods: ['day', 'dusk'],
+    type: 'mirage'
+  },
+  {
+    id: 'fc4',
+    sceneId: 'street',
+    name: '玻璃反光',
+    description: '商店橱窗的反光中，似乎有她的影子...',
+    fakeText: '你猛地转头，橱窗里只有你自己的倒影。你盯着倒影看了很久，发现自己的眼神里满是疲惫和思念。五年了，你变了很多。',
+    position: { x: 80, y: 55 },
+    size: { width: 10, height: 12 },
+    icon: '🪟',
+    timeCost: 2,
+    moodEffect: -2,
+    visiblePeriods: ['day'],
+    type: 'reflection'
+  },
+  {
+    id: 'fc5',
+    sceneId: 'cafe',
+    name: '空咖啡杯',
+    description: '靠窗的位置上有一杯还冒着热气的咖啡...',
+    fakeText: '你走过去，心跳加速。杯子旁边放着一本书——但不是她最爱的《小王子》，而是一本财经杂志。你摇摇头，是自己想多了。',
+    position: { x: 50, y: 45 },
+    size: { width: 8, height: 10 },
+    icon: '☕',
+    timeCost: 4,
+    moodEffect: -3,
+    visiblePeriods: ['day', 'dusk'],
+    type: 'almost'
+  },
+  {
+    id: 'fc6',
+    sceneId: 'park',
+    name: '飞舞的花瓣',
+    description: '花瓣在风中旋转，像是有人在...',
+    fakeText: '你追着花瓣跑了一会儿，它们却被风吹向了远方。你站在原地，看着花瓣消失在雾气中。那年夏天，你们也曾这样追着蝴蝶跑。',
+    position: { x: 40, y: 40 },
+    size: { width: 12, height: 12 },
+    icon: '🌸',
+    timeCost: 3,
+    moodEffect: -2,
+    visiblePeriods: ['dawn', 'day'],
+    type: 'memory'
+  },
+  {
+    id: 'fc7',
+    sceneId: 'park',
+    name: '长椅上的人影',
+    description: '那座刻着你们名字的长椅上，似乎坐着一个人...',
+    fakeText: '你屏住呼吸，慢慢走近。风吹散了一些雾气，你看清了——那只是一个背包，放在长椅上。旁边的老爷爷正在喂鸽子。"小伙子，你找人吗？"老爷爷慈祥地问。你摇摇头，笑了笑。',
+    position: { x: 65, y: 60 },
+    size: { width: 10, height: 12 },
+    icon: '🪑',
+    timeCost: 5,
+    moodEffect: -4,
+    visiblePeriods: ['dusk', 'night'],
+    type: 'mirage'
+  },
+  {
+    id: 'fc8',
+    sceneId: 'bookstore',
+    name: '翻阅的书本',
+    description: '书架间有一本书自己翻开了...',
+    fakeText: '你好奇地走过去，原来是窗户没关，风吹动了书页。你正要把窗户关上，却注意到那本书——《雾都孤儿》。你自嘲地笑了笑，她才不会看这种书。',
+    position: { x: 50, y: 50 },
+    size: { width: 10, height: 14 },
+    icon: '📖',
+    timeCost: 3,
+    moodEffect: -2,
+    visiblePeriods: ['dusk', 'night'],
+    type: 'wind'
+  },
+  {
+    id: 'fc9',
+    sceneId: 'bookstore',
+    name: '熟悉的香水味',
+    description: '空气中飘着一丝淡淡的薰衣草香...',
+    fakeText: '你循着香味找过去，却发现是书架上的香薰蜡烛在燃烧。"先生，要买一个吗？薰衣草味的，很受欢迎。"店员热情地介绍。你拿起蜡烛看了看，又放了回去。不是这个味道。',
+    position: { x: 25, y: 35 },
+    size: { width: 8, height: 10 },
+    icon: '🕯️',
+    timeCost: 4,
+    moodEffect: -3,
+    visiblePeriods: ['day', 'dusk', 'night'],
+    type: 'scent'
+  },
+  {
+    id: 'fc10',
+    sceneId: 'lake',
+    name: '湖中的倒影',
+    description: '湖面上倒映着一个身影...是她吗？',
+    fakeText: '你猛地抬头，岸边空无一人。再看向湖面，倒影也消失了。你蹲下来，看着自己的倒影。"是我太想你了吗？"你轻声问自己。湖面上雾气缭绕，没有回答。',
+    position: { x: 45, y: 65 },
+    size: { width: 12, height: 10 },
+    icon: '🌊',
+    timeCost: 4,
+    moodEffect: -4,
+    visiblePeriods: ['dusk', 'night'],
+    type: 'mirage'
+  },
+  {
+    id: 'fc11',
+    sceneId: 'lake',
+    name: '远处的灯笼',
+    description: '雾气深处有一点微光，像是有人提着灯笼...',
+    fakeText: '你朝着光点走了很久，却发现那只是湖边的太阳能路灯。你站在路灯下，四周都是雾气，分不清方向。你花了好一会儿才找到回去的路。',
+    position: { x: 85, y: 45 },
+    size: { width: 6, height: 15 },
+    icon: '🏮',
+    timeCost: 7,
+    moodEffect: -5,
+    visiblePeriods: ['night'],
+    type: 'lost'
+  }
+]
+
+export const fogHiddenItems = [
+  {
+    itemId: 'notebook',
+    sceneId: 'cafe',
+    unlockType: 'items',
+    requiredItems: ['cup', 'ring'],
+    hint: '有些东西，需要先找到其他线索才会显现...',
+    fogDensity: 0.8
+  },
+  {
+    itemId: 'letter',
+    sceneId: 'street',
+    unlockType: 'items',
+    requiredItems: ['photo'],
+    hint: '有些话，需要勇气才能看见...',
+    fogDensity: 0.7
+  },
+  {
+    itemId: 'glasses',
+    sceneId: 'bookstore',
+    unlockType: 'items',
+    requiredItems: ['book', 'bookmark'],
+    hint: '专注的模样，藏在记忆深处...',
+    fogDensity: 0.75
+  },
+  {
+    itemId: 'promise',
+    sceneId: 'lake',
+    unlockType: 'items',
+    requiredItems: ['bottle', 'necklace'],
+    hint: '永恒的诺言，需要先找到其他碎片...',
+    fogDensity: 0.85
+  },
+  {
+    itemId: 'carving',
+    sceneId: 'park',
+    unlockType: 'memory',
+    requiredMemoryCount: 5,
+    hint: '有些印记，只有回忆足够多的时候才会浮现...',
+    fogDensity: 0.7
+  },
+  {
+    itemId: 'necklace',
+    sceneId: 'lake',
+    unlockType: 'time',
+    requiredPeriod: 'dusk',
+    requiredChapter: 3,
+    hint: '海边的礼物，只在黄昏时分闪耀...',
+    fogDensity: 0.6
+  }
+]

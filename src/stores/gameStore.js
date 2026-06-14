@@ -37,6 +37,11 @@ export const useGameStore = defineStore('game', () => {
   const currentKeyChoice = ref(null)
   const keyChoiceResult = ref(null)
   const showKeyChoiceResult = ref(false)
+  const triggeredFakeClues = ref([])
+  const fakeClueMessage = ref(null)
+  const showFakeClueModal = ref(false)
+  const currentFakeClue = ref(null)
+  const recentlyUnlockedFogItems = ref([])
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -164,6 +169,42 @@ export const useGameStore = defineStore('game', () => {
     )
   })
 
+  const visibleFakeCluesForCurrentScene = computed(() => {
+    const scene = currentScene.value
+    if (!scene) return []
+    const fakeClues = storyStore.getFakeCluesBySceneId(scene.id)
+    return fakeClues.filter(fc => 
+      storyStore.isFakeClueVisibleAtTime(fc, timeStore.currentHour) &&
+      !triggeredFakeClues.value.includes(fc.id)
+    )
+  })
+
+  const foggedItemsForCurrentScene = computed(() => {
+    const scene = currentScene.value
+    if (!scene) return []
+    const fogItems = storyStore.getFogHiddenItemsBySceneId(scene.id)
+    return fogItems.map(fhi => {
+      const item = storyStore.getItemById(fhi.itemId)
+      const status = storyStore.checkFogItemUnlock(
+        fhi,
+        foundItems.value,
+        triggeredMemories.value.length,
+        timeStore.currentTimePeriod,
+        currentChapterId.value
+      )
+      return {
+        ...fhi,
+        item,
+        unlocked: status.unlocked,
+        status
+      }
+    })
+  })
+
+  const isAnyFogItemRecentlyUnlocked = computed(() => {
+    return recentlyUnlockedFogItems.value.length > 0
+  })
+
   function checkChapterProgress() {
     const calculatedChapter = storyStore.getCurrentChapter(memoryProgressPercent.value)
     if (calculatedChapter && calculatedChapter.id > currentChapterId.value) {
@@ -260,6 +301,7 @@ export const useGameStore = defineStore('game', () => {
       endingWeights.value = savedGame.endingWeights || {}
       foundHiddenItems.value = savedGame.foundHiddenItems || []
       itemInspectCount.value = savedGame.itemInspectCount || {}
+      triggeredFakeClues.value = savedGame.triggeredFakeClues || []
       if (savedGame.moodData) {
         moodStore.loadSaveData(savedGame.moodData)
       }
@@ -297,6 +339,7 @@ export const useGameStore = defineStore('game', () => {
     endingWeights.value = branchData.endingWeights || {}
     foundHiddenItems.value = branchData.foundHiddenItems || []
     itemInspectCount.value = branchData.itemInspectCount || {}
+    triggeredFakeClues.value = branchData.triggeredFakeClues || []
     isPaused.value = false
     if (branchData.moodData) {
       moodStore.loadSaveData(branchData.moodData)
@@ -340,6 +383,11 @@ export const useGameStore = defineStore('game', () => {
     endingWeights.value = {}
     foundHiddenItems.value = []
     itemInspectCount.value = {}
+    triggeredFakeClues.value = []
+    fakeClueMessage.value = null
+    showFakeClueModal.value = false
+    currentFakeClue.value = null
+    recentlyUnlockedFogItems.value = []
     moodStore.resetMood()
     timeStore.resetTime()
     saveStore.clearSave()
@@ -400,11 +448,110 @@ export const useGameStore = defineStore('game', () => {
         }, 500)
       }
 
+      checkFogItemUnlocks()
+
       archiveToGlobal()
       saveProgress()
       checkChapterProgress()
       checkGameComplete()
     }
+  }
+
+  function clickFakeClue(fcId) {
+    if (triggeredFakeClues.value.includes(fcId)) return null
+    
+    const fakeClue = storyStore.getFakeClueById(fcId)
+    if (!fakeClue) return null
+
+    triggeredFakeClues.value.push(fcId)
+
+    if (fakeClue.timeCost && timeRemaining.value > 0) {
+      timeRemaining.value = Math.max(0, timeRemaining.value - fakeClue.timeCost)
+    }
+
+    if (fakeClue.moodEffect) {
+      moodStore.setMood(moodStore.moodValue + fakeClue.moodEffect)
+      const emotion = fakeClue.moodEffect > 0 ? 'warm' : 'sad'
+      triggerMoodChange(emotion)
+    }
+
+    currentFakeClue.value = fakeClue
+    showFakeClueModal.value = true
+    pauseGame()
+
+    saveProgress()
+    return fakeClue
+  }
+
+  function closeFakeClueModal() {
+    showFakeClueModal.value = false
+    currentFakeClue.value = null
+    resumeGame()
+  }
+
+  function isFakeClueTriggered(fcId) {
+    return triggeredFakeClues.value.includes(fcId)
+  }
+
+  function isItemFogHidden(itemId) {
+    const fogItem = storyStore.getFogHiddenItemByItemId(itemId)
+    if (!fogItem) return false
+    
+    const status = storyStore.checkFogItemUnlock(
+      fogItem,
+      foundItems.value,
+      triggeredMemories.value.length,
+      timeStore.currentTimePeriod,
+      currentChapterId.value
+    )
+    return !status.unlocked
+  }
+
+  function getFogItemStatus(itemId) {
+    const fogItem = storyStore.getFogHiddenItemByItemId(itemId)
+    if (!fogItem) return { unlocked: true, reason: 'no_fog_item' }
+    
+    return storyStore.checkFogItemUnlock(
+      fogItem,
+      foundItems.value,
+      triggeredMemories.value.length,
+      timeStore.currentTimePeriod,
+      currentChapterId.value
+    )
+  }
+
+  function checkFogItemUnlocks() {
+    const scene = currentScene.value
+    if (!scene) return
+
+    const fogItems = storyStore.getFogHiddenItemsBySceneId(scene.id)
+    const newlyUnlocked = []
+
+    for (const fhi of fogItems) {
+      const status = storyStore.checkFogItemUnlock(
+        fhi,
+        foundItems.value,
+        triggeredMemories.value.length,
+        timeStore.currentTimePeriod,
+        currentChapterId.value
+      )
+      
+      if (status.unlocked && !recentlyUnlockedFogItems.value.includes(fhi.itemId)) {
+        if (!foundItems.value.includes(fhi.itemId)) {
+          newlyUnlocked.push(fhi.itemId)
+          recentlyUnlockedFogItems.value.push(fhi.itemId)
+          
+          setTimeout(() => {
+            const idx = recentlyUnlockedFogItems.value.indexOf(fhi.itemId)
+            if (idx > -1) {
+              recentlyUnlockedFogItems.value.splice(idx, 1)
+            }
+          }, 3000)
+        }
+      }
+    }
+
+    return newlyUnlocked
   }
 
   function inspectItem(itemId) {
@@ -554,6 +701,7 @@ export const useGameStore = defineStore('game', () => {
         endingWeights: { ...endingWeights.value },
         foundHiddenItems: [...foundHiddenItems.value],
         itemInspectCount: { ...itemInspectCount.value },
+        triggeredFakeClues: [...triggeredFakeClues.value],
         moodData: moodStore.getSaveData(),
         timeData: timeStore.getSaveData()
       }
@@ -677,6 +825,7 @@ export const useGameStore = defineStore('game', () => {
         endingWeights: { ...endingWeights.value },
         foundHiddenItems: [...foundHiddenItems.value],
         itemInspectCount: { ...itemInspectCount.value },
+        triggeredFakeClues: [...triggeredFakeClues.value],
         moodData: moodStore.getSaveData(),
         timeData: timeStore.getSaveData()
       }
@@ -701,6 +850,7 @@ export const useGameStore = defineStore('game', () => {
       endingWeights: { ...endingWeights.value },
       foundHiddenItems: [...foundHiddenItems.value],
       itemInspectCount: { ...itemInspectCount.value },
+      triggeredFakeClues: [...triggeredFakeClues.value],
       moodData: moodStore.getSaveData(),
       timeData: timeStore.getSaveData()
     })
@@ -786,6 +936,14 @@ export const useGameStore = defineStore('game', () => {
     dominantEndingWeights,
     hasMadeChoice,
     isChoiceMadeFor,
+    triggeredFakeClues,
+    fakeClueMessage,
+    showFakeClueModal,
+    currentFakeClue,
+    recentlyUnlockedFogItems,
+    visibleFakeCluesForCurrentScene,
+    foggedItemsForCurrentScene,
+    isAnyFogItemRecentlyUnlocked,
     moodStateName,
     moodStateColor,
     moodPercent,
@@ -832,6 +990,12 @@ export const useGameStore = defineStore('game', () => {
     findItem,
     inspectItem,
     isHiddenItemFound,
+    clickFakeClue,
+    closeFakeClueModal,
+    isFakeClueTriggered,
+    isItemFogHidden,
+    getFogItemStatus,
+    checkFogItemUnlocks,
     openKeyChoice,
     closeKeyChoice,
     makeChoice,

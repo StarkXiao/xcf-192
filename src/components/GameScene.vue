@@ -100,7 +100,12 @@
             v-for="item in visibleItemsForCurrentScene"
             :key="item.id"
             class="scene-item"
-            :class="{ found: isItemFound(item.id), 'item-glow': !isItemFound(item.id) }"
+            :class="{ 
+              found: isItemFound(item.id), 
+              'item-glow': !isItemFound(item.id),
+              'fog-hidden': isItemFogHidden(item.id),
+              'fog-reveal': isFogRevealed(item.id)
+            }"
             :style="{
               left: item.position.x + '%',
               top: item.position.y + '%',
@@ -108,18 +113,45 @@
               height: item.size.height + '%',
               '--hint-glow-opacity': hintIntensity.glowOpacity,
               '--hint-scale': hintIntensity.hintScale,
-              '--pulse-duration': hintIntensity.pulseSpeed + 's'
+              '--pulse-duration': hintIntensity.pulseSpeed + 's',
+              '--fog-density': getFogDensity(item.id)
             }"
             @click="handleItemClick(item)"
           >
             <span class="item-icon">{{ item.icon }}</span>
             <span v-if="!isItemFound(item.id)" class="item-hint">?</span>
+            <div v-if="isItemFogHidden(item.id)" class="item-fog-overlay"></div>
+          </div>
+
+          <div
+            v-for="fakeClue in visibleFakeCluesForCurrentScene"
+            :key="fakeClue.id"
+            class="scene-item fake-clue"
+            :class="`fake-type-${fakeClue.type}`"
+            :style="{
+              left: fakeClue.position.x + '%',
+              top: fakeClue.position.y + '%',
+              width: fakeClue.size.width + '%',
+              height: fakeClue.size.height + '%'
+            }"
+            @click="handleFakeClueClick(fakeClue)"
+          >
+            <span class="item-icon fake-icon">{{ fakeClue.icon }}</span>
+            <span class="fake-hint">?</span>
+            <div class="fake-fog-effect"></div>
           </div>
           
           <div v-if="visibleItemsForCurrentScene.length < (currentScene?.items?.length || 0)" class="time-hint">
             <span class="time-hint-icon">💡</span>
             <span class="time-hint-text">某些物品只在特定时间出现...</span>
           </div>
+
+          <Transition name="fog-unlock">
+            <div v-if="isAnyFogItemRecentlyUnlocked" class="fog-unlock-toast">
+              <span class="fog-unlock-icon">✨</span>
+              <span class="fog-unlock-text">迷雾散去，新的线索显现了...</span>
+            </div>
+          </Transition>
         </div>
       </div>
     </Transition>
@@ -260,6 +292,32 @@
       </div>
     </Transition>
 
+    <Transition name="fade">
+      <div v-if="showFakeClueModal" class="fake-clue-modal" @click.self="closeFakeClueModal">
+        <div class="fake-clue-panel">
+          <div class="fake-clue-header">
+            <span class="fake-clue-icon">{{ currentFakeClue?.icon }}</span>
+            <h3 class="fake-clue-title">{{ currentFakeClue?.name }}</h3>
+          </div>
+          <div class="fake-clue-divider"></div>
+          <p class="fake-clue-text">{{ currentFakeClue?.fakeText }}</p>
+          <div class="fake-clue-penalty">
+            <div class="penalty-item time-penalty" v-if="currentFakeClue?.timeCost">
+              <span class="penalty-icon">⏱️</span>
+              <span class="penalty-text">消耗时间 -{{ currentFakeClue.timeCost }}秒</span>
+            </div>
+            <div class="penalty-item mood-penalty" v-if="currentFakeClue?.moodEffect">
+              <span class="penalty-icon">💭</span>
+              <span class="penalty-text">心绪变化 {{ currentFakeClue.moodEffect > 0 ? '+' : '' }}{{ currentFakeClue.moodEffect }}</span>
+            </div>
+          </div>
+          <button class="fake-clue-close-btn" @click="closeFakeClueModal">
+            继续探索
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <MemoryModal />
     <CraftingModal />
     <ChapterNarration />
@@ -319,6 +377,10 @@ const timePeriodChanged = computed(() => gameStore.timePeriodChanged)
 const timeProgress = computed(() => gameStore.timeProgress)
 const combinedAtmosphere = computed(() => gameStore.combinedAtmosphere)
 const visibleItemsForCurrentScene = computed(() => gameStore.visibleItemsForCurrentScene)
+const visibleFakeCluesForCurrentScene = computed(() => gameStore.visibleFakeCluesForCurrentScene)
+const showFakeClueModal = computed(() => gameStore.showFakeClueModal)
+const currentFakeClue = computed(() => gameStore.currentFakeClue)
+const isAnyFogItemRecentlyUnlocked = computed(() => gameStore.isAnyFogItemRecentlyUnlocked)
 
 const sceneDescriptionStyle = computed(() => {
   const tone = textTone.value

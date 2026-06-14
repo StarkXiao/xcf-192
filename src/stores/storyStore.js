@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters, keyChoices, hiddenItems, reunionEndings, endingWeightLabels } from '../data/storyData'
+import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters, keyChoices, hiddenItems, reunionEndings, endingWeightLabels, fakeClues, fogHiddenItems } from '../data/storyData'
 import { ENDING_MOOD_THRESHOLDS } from './moodStore'
 
 export const EFFICIENCY_LEVELS = {
@@ -142,6 +142,71 @@ export const useStoryStore = defineStore('story', () => {
       return hi
     }
     return null
+  }
+
+  function getFakeCluesBySceneId(sceneId) {
+    return fakeClues.filter(fc => fc.sceneId === sceneId)
+  }
+
+  function getAllFakeClues() {
+    return fakeClues
+  }
+
+  function getFakeClueById(fcId) {
+    return fakeClues.find(fc => fc.id === fcId)
+  }
+
+  function isFakeClueVisibleAtTime(fakeClue, hour) {
+    if (!fakeClue || !fakeClue.visiblePeriods) return true
+    const period = getTimePeriodForHour(hour)
+    return fakeClue.visiblePeriods.includes(period)
+  }
+
+  function getFogHiddenItems() {
+    return fogHiddenItems
+  }
+
+  function getFogHiddenItemByItemId(itemId) {
+    return fogHiddenItems.find(fhi => fhi.itemId === itemId)
+  }
+
+  function getFogHiddenItemsBySceneId(sceneId) {
+    return fogHiddenItems.filter(fhi => fhi.sceneId === sceneId)
+  }
+
+  function checkFogItemUnlock(fogItem, foundItemIds, triggeredMemoryCount, currentPeriod, currentChapterId) {
+    if (!fogItem) return { unlocked: true, reason: 'no_fog_item' }
+
+    switch (fogItem.unlockType) {
+      case 'items':
+        const hasAllItems = fogItem.requiredItems.every(itemId => foundItemIds.includes(itemId))
+        return {
+          unlocked: hasAllItems,
+          reason: hasAllItems ? 'all_items_found' : 'missing_items',
+          progress: fogItem.requiredItems.filter(id => foundItemIds.includes(id)).length,
+          total: fogItem.requiredItems.length
+        }
+      case 'memory':
+        const hasEnoughMemories = triggeredMemoryCount >= fogItem.requiredMemoryCount
+        return {
+          unlocked: hasEnoughMemories,
+          reason: hasEnoughMemories ? 'enough_memories' : 'not_enough_memories',
+          progress: triggeredMemoryCount,
+          total: fogItem.requiredMemoryCount
+        }
+      case 'time':
+        const rightPeriod = currentPeriod === fogItem.requiredPeriod
+        const rightChapter = !fogItem.requiredChapter || currentChapterId >= fogItem.requiredChapter
+        const timeUnlocked = rightPeriod && rightChapter
+        return {
+          unlocked: timeUnlocked,
+          reason: timeUnlocked ? 'right_time' : (rightChapter ? 'wrong_time' : 'chapter_locked'),
+          progress: timeUnlocked ? 1 : 0,
+          total: 1
+        }
+      default:
+        return { unlocked: true, reason: 'unknown_type' }
+    }
   }
 
   function getAllReunionEndings() {
@@ -569,6 +634,14 @@ export const useStoryStore = defineStore('story', () => {
     getEndingWeightLabel,
     calculateFindEfficiency,
     calculateMemoryCompleteness,
-    getReunionEnding
+    getReunionEnding,
+    getFakeCluesBySceneId,
+    getAllFakeClues,
+    getFakeClueById,
+    isFakeClueVisibleAtTime,
+    getFogHiddenItems,
+    getFogHiddenItemByItemId,
+    getFogHiddenItemsBySceneId,
+    checkFogItemUnlock
   }
 })
