@@ -13,7 +13,7 @@ export const TIME_PERIOD_CONFIG = {
     name: '黎明',
     icon: '🌅',
     startHour: 5,
-    endHour: 7,
+    endHour: 8,
     brightness: 0.85,
     saturation: 0.8,
     fogMultiplier: 1.3,
@@ -23,8 +23,8 @@ export const TIME_PERIOD_CONFIG = {
   [TIME_PERIODS.DAY]: {
     name: '白天',
     icon: '☀️',
-    startHour: 7,
-    endHour: 17,
+    startHour: 8,
+    endHour: 16,
     brightness: 1.2,
     saturation: 1.1,
     fogMultiplier: 0.6,
@@ -34,8 +34,8 @@ export const TIME_PERIOD_CONFIG = {
   [TIME_PERIODS.DUSK]: {
     name: '黄昏',
     icon: '🌇',
-    startHour: 17,
-    endHour: 19,
+    startHour: 16,
+    endHour: 18,
     brightness: 0.9,
     saturation: 0.95,
     fogMultiplier: 1.1,
@@ -45,7 +45,7 @@ export const TIME_PERIOD_CONFIG = {
   [TIME_PERIODS.NIGHT]: {
     name: '夜晚',
     icon: '🌙',
-    startHour: 19,
+    startHour: 18,
     endHour: 5,
     brightness: 0.5,
     saturation: 0.6,
@@ -56,8 +56,8 @@ export const TIME_PERIOD_CONFIG = {
 }
 
 export const GAME_START_HOUR = 8
-export const GAME_TOTAL_HOURS = 10
-export const REAL_SECONDS_PER_GAME_HOUR = 30
+export const GAME_TOTAL_HOURS = 14
+export const REAL_SECONDS_PER_GAME_HOUR = 22
 
 export const useTimeStore = defineStore('time', () => {
   const currentHour = ref(GAME_START_HOUR)

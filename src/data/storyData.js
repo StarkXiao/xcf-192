@@ -94,10 +94,11 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #3d2914 0%, #5d4e37 50%, #8b7355 100%)',
     fogIntensity: 0.3,
     connectedScenes: ['station', 'bookstore'],
-    accessiblePeriods: ['day', 'dusk'],
+    accessiblePeriods: ['day', 'dusk', 'night'],
     timeDescriptions: {
       day: '白天的咖啡馆阳光明媚，靠窗的位置洒满阳光...',
-      dusk: '黄昏的咖啡馆笼罩在温暖的灯光下，咖啡香气四溢...'
+      dusk: '黄昏的咖啡馆笼罩在温暖的灯光下，咖啡香气四溢...',
+      night: '夜晚的咖啡馆只留了一盏灯，空荡荡的座位上仿佛还留着她的影子...'
     },
     items: [
       {
@@ -136,11 +137,12 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #ff7e5f 0%, #feb47b 50%, #6a82fb 100%)',
     fogIntensity: 0.4,
     connectedScenes: ['street', 'lake'],
-    accessiblePeriods: ['dawn', 'day', 'dusk'],
+    accessiblePeriods: ['dawn', 'day', 'dusk', 'night'],
     timeDescriptions: {
       dawn: '清晨的公园空气清新，晨练的人们开始出现...',
       day: '白天的公园阳光明媚，孩子们在草地上奔跑...',
-      dusk: '黄昏的公园最美，夕阳把一切都染成了金黄色...'
+      dusk: '黄昏的公园最美，夕阳把一切都染成了金黄色...',
+      night: '夜晚的公园一片寂静，只有蝉鸣和风声，长椅在月光下等待...'
     },
     items: [
       {
