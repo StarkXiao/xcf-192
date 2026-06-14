@@ -16,6 +16,9 @@ export const useArchiveStore = defineStore('archive', () => {
     dusk: { itemsFound: 0, memoriesTriggered: 0 },
     night: { itemsFound: 0, memoriesTriggered: 0 }
   })
+  const unlockedChapters = ref([1])
+  const characterRelations = ref([])
+  const viewedEndingPlaybacks = ref([])
 
   const hasArchive = computed(() => {
     return unlockedEndings.value.length > 0
@@ -44,6 +47,9 @@ export const useArchiveStore = defineStore('archive', () => {
         dusk: { itemsFound: 0, memoriesTriggered: 0 },
         night: { itemsFound: 0, memoriesTriggered: 0 }
       }
+      unlockedChapters.value = parsed.unlockedChapters || [1]
+      characterRelations.value = parsed.characterRelations || []
+      viewedEndingPlaybacks.value = parsed.viewedEndingPlaybacks || []
     } catch (e) {
       console.error('读取档案失败:', e)
     }
@@ -58,7 +64,10 @@ export const useArchiveStore = defineStore('archive', () => {
         everTriggeredMemories: everTriggeredMemories.value,
         everFoundHiddenItems: everFoundHiddenItems.value,
         branchSaves: branchSaves.value,
-        timePeriodStats: timePeriodStats.value
+        timePeriodStats: timePeriodStats.value,
+        unlockedChapters: unlockedChapters.value,
+        characterRelations: characterRelations.value,
+        viewedEndingPlaybacks: viewedEndingPlaybacks.value
       }
       localStorage.setItem(ARCHIVE_KEY, JSON.stringify(data))
     } catch (e) {
@@ -165,6 +174,9 @@ export const useArchiveStore = defineStore('archive', () => {
       dusk: { itemsFound: 0, memoriesTriggered: 0 },
       night: { itemsFound: 0, memoriesTriggered: 0 }
     }
+    unlockedChapters.value = [1]
+    characterRelations.value = []
+    viewedEndingPlaybacks.value = []
     try {
       localStorage.removeItem(ARCHIVE_KEY)
     } catch (e) {
@@ -192,6 +204,56 @@ export const useArchiveStore = defineStore('archive', () => {
     return everFoundHiddenItems.value.includes(hiId)
   }
 
+  function unlockChapter(chapterId) {
+    if (!unlockedChapters.value.includes(chapterId)) {
+      unlockedChapters.value.push(chapterId)
+      unlockedChapters.value.sort((a, b) => a - b)
+      persist()
+    }
+  }
+
+  function isChapterUnlocked(chapterId) {
+    return unlockedChapters.value.includes(chapterId)
+  }
+
+  function recordCharacterRelation(relation) {
+    const exists = characterRelations.value.find(r => r.id === relation.id)
+    if (!exists) {
+      characterRelations.value.push({
+        ...relation,
+        unlockedAt: Date.now()
+      })
+      persist()
+    }
+  }
+
+  function isCharacterRelationUnlocked(relationId) {
+    return characterRelations.value.some(r => r.id === relationId)
+  }
+
+  function recordEndingPlayback(endingType) {
+    if (!viewedEndingPlaybacks.value.includes(endingType)) {
+      viewedEndingPlaybacks.value.push(endingType)
+      persist()
+    }
+  }
+
+  function isEndingPlaybackViewed(endingType) {
+    return viewedEndingPlaybacks.value.includes(endingType)
+  }
+
+  function getArchiveCompletionStats() {
+    return {
+      unlockedChapters: unlockedChapters.value.length,
+      unlockedEndings: unlockedEndings.value.length,
+      triggeredMemories: everTriggeredMemories.value.length,
+      craftedItems: everCraftedItems.value.length,
+      hiddenMemories: everUnlockedHiddenMemories.value.length,
+      hiddenItems: everFoundHiddenItems.value.length,
+      characterRelations: characterRelations.value.length
+    }
+  }
+
   init()
 
   return {
@@ -202,6 +264,9 @@ export const useArchiveStore = defineStore('archive', () => {
     everFoundHiddenItems,
     branchSaves,
     timePeriodStats,
+    unlockedChapters,
+    characterRelations,
+    viewedEndingPlaybacks,
     hasArchive,
     endingCount,
     init,
@@ -220,6 +285,13 @@ export const useArchiveStore = defineStore('archive', () => {
     isHiddenMemoryEverUnlocked,
     isCraftedItemEverObtained,
     isMemoryEverTriggered,
-    isHiddenItemEverFound
+    isHiddenItemEverFound,
+    unlockChapter,
+    isChapterUnlocked,
+    recordCharacterRelation,
+    isCharacterRelationUnlocked,
+    recordEndingPlayback,
+    isEndingPlaybackViewed,
+    getArchiveCompletionStats
   }
 })

@@ -25,6 +25,7 @@ export const useGameStore = defineStore('game', () => {
   const showCraftingModal = ref(false)
   const craftResultMessage = ref(null)
   const showArchiveModal = ref(false)
+  const showMemoryArchiveModal = ref(false)
   const showJournalModal = ref(false)
   const currentChapterId = ref(1)
   const showChapterNarration = ref(false)
@@ -246,6 +247,7 @@ export const useGameStore = defineStore('game', () => {
     if (!chapter) return
 
     currentChapterId.value = newChapterId
+    archiveStore.unlockChapter(newChapterId)
     musicStore.updateContext({
       chapterId: newChapterId,
       memoryProgress: memoryProgressPercent.value,
@@ -989,6 +991,14 @@ export const useGameStore = defineStore('game', () => {
     showArchiveModal.value = false
   }
 
+  function openMemoryArchive() {
+    showMemoryArchiveModal.value = true
+  }
+
+  function closeMemoryArchive() {
+    showMemoryArchiveModal.value = false
+  }
+
   function openJournal() {
     showJournalModal.value = true
   }
@@ -1013,6 +1023,7 @@ export const useGameStore = defineStore('game', () => {
     showCraftingModal,
     craftResultMessage,
     showArchiveModal,
+    showMemoryArchiveModal,
     showJournalModal,
     currentChapterId,
     showChapterNarration,
@@ -1118,6 +1129,8 @@ export const useGameStore = defineStore('game', () => {
     isHiddenMemoryUnlocked,
     openArchive,
     closeArchive,
+    openMemoryArchive,
+    closeMemoryArchive,
     openJournal,
     closeJournal,
     checkChapterProgress,

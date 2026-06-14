@@ -280,6 +280,9 @@
             <button class="menu-btn-item journal-menu-btn" @click="openJournalFromMenu">
               📖 手账图鉴
             </button>
+            <button class="menu-btn-item archive-menu-btn" @click="openMemoryArchiveFromMenu">
+              🏛️ 回忆档案馆
+            </button>
             <button class="menu-btn-item" @click="saveAndContinue">
               💾 保存并继续
             </button>
@@ -549,6 +552,11 @@ function openJournal() {
 function openJournalFromMenu() {
   showMenu.value = false
   gameStore.openJournal()
+}
+
+function openMemoryArchiveFromMenu() {
+  showMenu.value = false
+  gameStore.openMemoryArchive()
 }
 
 function saveAndContinue() {
@@ -1407,6 +1415,16 @@ function getStarStyle(index) {
 
 .journal-menu-btn:hover {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.3));
+}
+
+.archive-menu-btn {
+  background: linear-gradient(135deg, rgba(96, 165, 150, 0.3), rgba(60, 130, 120, 0.2));
+  border: 1px solid rgba(96, 165, 150, 0.35);
+  color: #9ac8c0;
+}
+
+.archive-menu-btn:hover {
+  background: linear-gradient(135deg, rgba(96, 165, 150, 0.5), rgba(60, 130, 120, 0.3));
 }
 
 .found-toast {

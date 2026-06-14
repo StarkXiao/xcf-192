@@ -61,6 +61,9 @@
           <button v-if="hasArchive" class="btn btn-archive half-btn" @click="openArchive">
             📖 回忆档案 ({{ archiveSummary }})
           </button>
+          <button class="btn btn-memory-archive half-btn" @click="openMemoryArchive">
+            🏛️ 回忆档案馆
+          </button>
           <button class="btn btn-leaderboard half-btn" @click="openLeaderboard">
             🏆 排行榜
           </button>
@@ -137,6 +140,10 @@ function startChallenge() {
 
 function openArchive() {
   gameStore.openArchive()
+}
+
+function openMemoryArchive() {
+  gameStore.openMemoryArchive()
 }
 
 function openLeaderboard() {
@@ -408,6 +415,18 @@ function openBadges() {
 .btn-archive:hover {
   background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.25));
   box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-memory-archive {
+  background: linear-gradient(135deg, rgba(96, 165, 150, 0.3), rgba(60, 130, 120, 0.2));
+  border: 1px solid rgba(96, 165, 150, 0.4);
+  color: #a0d4cc;
+}
+
+.btn-memory-archive:hover {
+  background: linear-gradient(135deg, rgba(96, 165, 150, 0.5), rgba(60, 130, 120, 0.3));
+  box-shadow: 0 4px 15px rgba(96, 165, 150, 0.35);
   transform: translateY(-2px);
 }
 

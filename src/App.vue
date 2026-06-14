@@ -9,6 +9,7 @@
     <KeyChoiceModal />
     <LeaderboardModal />
     <BadgeModal />
+    <MemoryArchiveModal />
   </div>
 </template>
 
@@ -24,6 +25,7 @@ import JournalModal from './components/JournalModal.vue'
 import KeyChoiceModal from './components/KeyChoiceModal.vue'
 import LeaderboardModal from './components/LeaderboardModal.vue'
 import BadgeModal from './components/BadgeModal.vue'
+import MemoryArchiveModal from './components/MemoryArchiveModal.vue'
 
 const gameStore = useGameStore()
 const gameState = computed(() => gameStore.gameState)
