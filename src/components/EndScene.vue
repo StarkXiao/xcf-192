@@ -1,13 +1,19 @@
 <template>
-  <div class="end-scene">
+  <div class="end-scene" :class="endingType">
     <div class="fog-layer"></div>
     
     <div class="end-content">
-      <div class="ending-icon">{{ endingEmoji }}</div>
+      <div class="ending-icon" :class="{ special: endingData?.isSpecial }">{{ endingEmoji }}</div>
       
       <h1 class="ending-title text-shadow" :class="endingType">
         {{ endingData?.title }}
       </h1>
+      
+      <div class="ending-type-badge" v-if="endingData?.isSpecial">
+        <span class="badge-star">✦</span>
+        {{ specialEndingText }}
+        <span class="badge-star">✦</span>
+      </div>
       
       <div class="ending-divider"></div>
       
@@ -22,37 +28,95 @@
           <span class="stat-value">{{ foundCount }}/{{ totalItems }}</span>
         </div>
         <div class="stat-row">
+          <span class="stat-icon">✨</span>
+          <span class="stat-label">合成道具</span>
+          <span class="stat-value craft-stat">{{ craftedCount }}/{{ totalCraftable }}</span>
+        </div>
+        <div class="stat-row">
           <span class="stat-icon">💭</span>
           <span class="stat-label">回忆碎片</span>
           <span class="stat-value">{{ triggeredMemories }}/{{ totalItems }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🌟</span>
+          <span class="stat-label">隐藏回忆</span>
+          <span class="stat-value hm-stat">{{ unlockedHM }}/{{ totalHM }}</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">⏱️</span>
           <span class="stat-label">用时</span>
           <span class="stat-value">{{ formattedTimeUsed }}</span>
         </div>
-        <div class="stat-row">
+        <div class="stat-row total-progress-row">
           <span class="stat-icon">📊</span>
-          <span class="stat-label">完成度</span>
-          <span class="stat-value">{{ completionRate }}%</span>
+          <span class="stat-label">综合完成度</span>
+          <span class="stat-value total-stat">{{ completionRate }}%</span>
+        </div>
+      </div>
+      
+      <div class="crafted-section" v-if="totalCraftable > 0">
+        <h3 class="section-title">
+          <span class="section-icon">💎</span>
+          合成收集
+        </h3>
+        <div class="crafted-grid">
+          <div
+            v-for="crafted in allCraftedItems"
+            :key="crafted.id"
+            class="crafted-end-card"
+            :class="{ unlocked: isCrafted(crafted.id), [`end-rarity-${crafted.rarity}`]: true }"
+          >
+            <span class="crafted-end-icon">
+              {{ isCrafted(crafted.id) ? crafted.icon : '🔒' }}
+            </span>
+            <span class="crafted-end-name">
+              {{ isCrafted(crafted.id) ? crafted.name : '???' }}
+            </span>
+            <span v-if="isCrafted(crafted.id)" class="crafted-end-rarity" :class="`end-rarity-${crafted.rarity}`">
+              {{ getRarityLabel(crafted.rarity) }}
+            </span>
+          </div>
         </div>
       </div>
       
       <div class="collected-memories">
         <h3 class="memories-title">收集的回忆</h3>
-        <div class="memories-grid">
-          <div
-            v-for="memory in allMemories"
-            :key="memory.id"
-            class="memory-card"
-            :class="{ unlocked: isMemoryUnlocked(memory.id) }"
-          >
-            <span class="memory-card-icon">
-              {{ isMemoryUnlocked(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
-            </span>
-            <span class="memory-card-title">
-              {{ isMemoryUnlocked(memory.id) ? memory.title : '???' }}
-            </span>
+        
+        <div class="memories-section" v-if="totalHM > 0">
+          <h4 class="subsection-title">🌟 隐藏回忆</h4>
+          <div class="memories-grid hidden-grid">
+            <div
+              v-for="memory in allHiddenMemories"
+              :key="memory.id"
+              class="memory-card hidden-card"
+              :class="{ unlocked: isHiddenMemoryUnlocked(memory.id) }"
+            >
+              <span class="memory-card-icon">
+                {{ isHiddenMemoryUnlocked(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
+              </span>
+              <span class="memory-card-title">
+                {{ isHiddenMemoryUnlocked(memory.id) ? memory.title : '???' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="memories-section">
+          <h4 class="subsection-title">💭 普通回忆</h4>
+          <div class="memories-grid">
+            <div
+              v-for="memory in allMemories"
+              :key="memory.id"
+              class="memory-card"
+              :class="{ unlocked: isMemoryUnlocked(memory.id) }"
+            >
+              <span class="memory-card-icon">
+                {{ isMemoryUnlocked(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
+              </span>
+              <span class="memory-card-title">
+                {{ isMemoryUnlocked(memory.id) ? memory.title : '???' }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -85,9 +149,20 @@ const timeUsed = ref(300 - gameStore.timeRemaining)
 const foundCount = computed(() => gameStore.foundCount)
 const totalItems = computed(() => gameStore.totalItems)
 const triggeredMemories = computed(() => gameStore.triggeredMemories.length)
+const craftedCount = computed(() => gameStore.craftedCount)
+const totalCraftable = computed(() => gameStore.totalCraftable)
+const craftedItems = computed(() => gameStore.craftedItems)
+
+const unlockedHM = computed(() => gameStore.unlockedHiddenMemories.length)
+const totalHM = computed(() => storyStore.getAllHiddenMemories().length)
+const allHiddenMemories = computed(() => storyStore.getAllHiddenMemories())
+const allCraftedItems = computed(() => storyStore.getAllCraftedItems())
 
 const completionRate = computed(() => {
-  return Math.round((foundCount.value / totalItems.value) * 100)
+  const itemRate = totalItems.value > 0 ? foundCount.value / totalItems.value : 0
+  const craftRate = totalCraftable.value > 0 ? craftedCount.value / totalCraftable.value : 0
+  const hmRate = totalHM.value > 0 ? unlockedHM.value / totalHM.value : 0
+  return Math.round(((itemRate * 0.4) + (craftRate * 0.35) + (hmRate * 0.25)) * 100)
 })
 
 const formattedTimeUsed = computed(() => {
@@ -97,13 +172,25 @@ const formattedTimeUsed = computed(() => {
 })
 
 const endingData = computed(() => {
-  return storyStore.getEndingData(foundCount.value, totalItems.value, timeUsed.value)
+  return storyStore.getEndingData(foundCount.value, totalItems.value, timeUsed.value, craftedItems.value)
 })
 
 const endingType = computed(() => endingData.value?.type || 'normal')
 
+const specialEndingText = computed(() => {
+  const map = {
+    legendary: '传说结局',
+    epic: '史诗结局',
+    special: '特殊结局'
+  }
+  return map[endingType.value] || '隐藏结局'
+})
+
 const endingEmoji = computed(() => {
   const emojis = {
+    legendary: '👑',
+    epic: '🏆',
+    special: '💫',
     perfect: '🌟',
     good: '🥰',
     normal: '💭',
@@ -116,6 +203,19 @@ const allMemories = computed(() => storyStore.getAllMemories())
 
 function isMemoryUnlocked(memoryId) {
   return gameStore.triggeredMemories.includes(memoryId)
+}
+
+function isHiddenMemoryUnlocked(hmId) {
+  return gameStore.isHiddenMemoryUnlocked(hmId)
+}
+
+function isCrafted(craftId) {
+  return gameStore.isCrafted(craftId)
+}
+
+function getRarityLabel(rarity) {
+  const map = { legendary: '传说', epic: '史诗', rare: '稀有' }
+  return map[rarity] || rarity
 }
 
 function getEmojiForEmotion(emotion) {
@@ -158,6 +258,19 @@ function returnHome() {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  transition: background 1s ease;
+}
+
+.end-scene.legendary {
+  background: linear-gradient(180deg, #1a1200 0%, #2d1f05 40%, #4a3008 100%);
+}
+
+.end-scene.epic {
+  background: linear-gradient(180deg, #1a0a2e 0%, #2d1f4d 40%, #3d2a6b 100%);
+}
+
+.end-scene.special {
+  background: linear-gradient(180deg, #0a1a2e 0%, #1f3d4d 40%, #2a5a6b 100%);
 }
 
 .fog-layer {
@@ -169,6 +282,18 @@ function returnHome() {
   background: radial-gradient(ellipse at center, rgba(200, 200, 220, 0.15) 0%, transparent 70%);
   animation: fog 12s ease-in-out infinite;
   pointer-events: none;
+}
+
+.end-scene.legendary .fog-layer {
+  background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.12) 0%, transparent 70%);
+}
+
+.end-scene.epic .fog-layer {
+  background: radial-gradient(ellipse at center, rgba(192, 132, 252, 0.12) 0%, transparent 70%);
+}
+
+.end-scene.special .fog-layer {
+  background: radial-gradient(ellipse at center, rgba(96, 165, 250, 0.12) 0%, transparent 70%);
 }
 
 .end-content {
@@ -187,11 +312,20 @@ function returnHome() {
   animation: float 4s ease-in-out infinite;
 }
 
+.ending-icon.special {
+  animation: float 4s ease-in-out infinite, sparkle-rotate 3s ease-in-out infinite;
+}
+
+@keyframes sparkle-rotate {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5)); }
+  50% { filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.8)); }
+}
+
 .ending-title {
   font-size: clamp(1.8rem, 6vw, 2.5rem);
   font-weight: 400;
   letter-spacing: 0.3rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: #e8e8f0;
 }
 
@@ -209,6 +343,36 @@ function returnHome() {
   background-clip: text;
 }
 
+.ending-title.legendary {
+  background: linear-gradient(135deg, #ffd700, #ffec8b, #ffd700, #ff8c00);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.ending-title.epic {
+  background: linear-gradient(135deg, #c084fc, #a78bfa, #818cf8);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.ending-title.special {
+  background: linear-gradient(135deg, #60a5fa, #38bdf8, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .ending-title.normal {
   color: #b0b0c0;
 }
@@ -217,11 +381,59 @@ function returnHome() {
   color: #707080;
 }
 
+.ending-type-badge {
+  display: inline-block;
+  padding: 0.4rem 1.2rem;
+  border-radius: 20px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.1rem;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.epic + .ending-type-badge,
+.end-scene.epic .ending-type-badge {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.1);
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+.special + .ending-type-badge,
+.end-scene.special .ending-type-badge {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.badge-star {
+  margin: 0 0.3rem;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 .ending-divider {
   width: 80px;
   height: 2px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   margin: 0 auto 1.5rem;
+}
+
+.end-scene.legendary .ending-divider {
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.6), transparent);
+}
+
+.end-scene.epic .ending-divider {
+  background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.6), transparent);
+}
+
+.end-scene.special .ending-divider {
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.6), transparent);
 }
 
 .ending-description {
@@ -243,11 +455,26 @@ function returnHome() {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.end-scene.legendary .game-stats {
+  border-color: rgba(255, 215, 0, 0.2);
+  background: rgba(255, 215, 0, 0.03);
+}
+
+.end-scene.epic .game-stats {
+  border-color: rgba(192, 132, 252, 0.2);
+  background: rgba(192, 132, 252, 0.03);
+}
+
+.end-scene.special .game-stats {
+  border-color: rgba(96, 165, 250, 0.2);
+  background: rgba(96, 165, 250, 0.03);
+}
+
 .stat-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 0;
+  padding: 0.7rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -255,9 +482,16 @@ function returnHome() {
   border-bottom: none;
 }
 
+.total-progress-row {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+}
+
 .stat-icon {
-  font-size: 1.4rem;
-  margin-right: 1rem;
+  font-size: 1.3rem;
+  margin-right: 0.8rem;
 }
 
 .stat-label {
@@ -273,6 +507,127 @@ function returnHome() {
   font-size: clamp(0.9rem, 2.6vw, 1rem);
 }
 
+.stat-value.craft-stat {
+  color: #d4a574;
+}
+
+.stat-value.hm-stat {
+  color: #fbbf24;
+}
+
+.stat-value.total-stat {
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.end-scene.legendary .stat-value.total-stat {
+  color: #ffd700;
+}
+
+.end-scene.epic .stat-value.total-stat {
+  color: #c084fc;
+}
+
+.end-scene.special .stat-value.total-stat {
+  color: #60a5fa;
+}
+
+.crafted-section {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-title {
+  margin: 0 0 1rem 0;
+  color: #d4a574;
+  font-size: clamp(1rem, 3vw, 1.1rem);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.section-icon {
+  font-size: 1.3rem;
+}
+
+.crafted-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.8rem;
+}
+
+.crafted-end-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.8rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+.crafted-end-card.unlocked {
+  opacity: 1;
+}
+
+.crafted-end-card.end-rarity-legendary.unlocked {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.crafted-end-card.end-rarity-epic.unlocked {
+  background: rgba(192, 132, 252, 0.08);
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+.crafted-end-card.end-rarity-rare.unlocked {
+  background: rgba(96, 165, 250, 0.08);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.crafted-end-icon {
+  font-size: 1.8rem;
+}
+
+.crafted-end-name {
+  font-size: 0.82rem;
+  color: #707080;
+  text-align: center;
+}
+
+.crafted-end-card.unlocked .crafted-end-name {
+  color: #c0c0d0;
+}
+
+.crafted-end-rarity {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 8px;
+}
+
+.crafted-end-rarity.end-rarity-legendary {
+  background: rgba(255, 215, 0, 0.15);
+  color: #ffd700;
+}
+
+.crafted-end-rarity.end-rarity-epic {
+  background: rgba(192, 132, 252, 0.15);
+  color: #c084fc;
+}
+
+.crafted-end-rarity.end-rarity-rare {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
 .collected-memories {
   margin-bottom: 2rem;
 }
@@ -285,24 +640,40 @@ function returnHome() {
   letter-spacing: 0.1rem;
 }
 
+.memories-section {
+  margin-bottom: 1.2rem;
+}
+
+.subsection-title {
+  margin: 0 0 0.8rem 0;
+  color: #808090;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+}
+
 .memories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.8rem;
-  max-height: 200px;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.6rem;
+  max-height: 180px;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: 0.3rem;
+}
+
+.hidden-grid {
+  max-height: 120px;
 }
 
 .memory-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 0.8rem 0.5rem;
+  padding: 0.7rem 0.4rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   transition: all 0.3s ease;
 }
 
@@ -311,14 +682,20 @@ function returnHome() {
   border-color: rgba(102, 126, 234, 0.3);
 }
 
+.memory-card.hidden-card.unlocked {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
 .memory-card-icon {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
 }
 
 .memory-card-title {
-  font-size: clamp(0.75rem, 2.2vw, 0.85rem);
-  color: #a0a0b0;
+  font-size: clamp(0.72rem, 2.1vw, 0.82rem);
+  color: #707080;
   text-align: center;
+  line-height: 1.3;
 }
 
 .memory-card.unlocked .memory-card-title {
@@ -347,6 +724,21 @@ function returnHome() {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.end-scene.legendary .btn-primary {
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.end-scene.epic .btn-primary {
+  background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 100%);
+  box-shadow: 0 4px 15px rgba(192, 132, 252, 0.4);
+}
+
+.end-scene.special .btn-primary {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.4);
 }
 
 .btn-primary:hover {

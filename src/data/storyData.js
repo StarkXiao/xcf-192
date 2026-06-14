@@ -351,3 +351,171 @@ export const memories = [
     year: '五年前'
   }
 ]
+
+export const craftedItems = [
+  {
+    id: 'time_key',
+    name: '时光钥匙',
+    description: '将怀表、车票与未寄出的信融合，铸成的一把闪耀着淡蓝色光芒的钥匙。据说它能打开被时间封印的门。',
+    icon: '🗝️',
+    rarity: 'legendary'
+  },
+  {
+    id: 'promise_ring',
+    name: '承诺之戒',
+    description: '易拉罐拉环与贝壳项链的缠绕，还有那颗代表永恒的石子镶嵌其中。这不只是玩笑，而是真正的约定。',
+    icon: '💎',
+    rarity: 'legendary'
+  },
+  {
+    id: 'memory_book',
+    name: '回忆之书',
+    description: '日记本、书签、小王子，还有那枚枫叶书签夹在其中。每一页，都是你们共同写下的故事。',
+    icon: '📚',
+    rarity: 'epic'
+  },
+  {
+    id: 'summer_locket',
+    name: '盛夏相片盒',
+    description: '合照、干花与冰淇淋勺的碎片，封存进一个精巧的小盒中。打开它，仿佛能闻到那年夏天的味道。',
+    icon: '🌻',
+    rarity: 'epic'
+  },
+  {
+    id: 'eternal_bouquet',
+    name: '永恒花束',
+    description: '干薰衣草、气球绳子与木刻碎屑组成的花束，不会凋谢，不会褪色，就像你们刻在老树上的誓言。',
+    icon: '💐',
+    rarity: 'rare'
+  },
+  {
+    id: 'lake_message',
+    name: '湖水信笺',
+    description: '漂流瓶中的纸条被重新抚平，和贝壳、许愿石一起，组成了一封来自五年前的完整情书。',
+    icon: '📜',
+    rarity: 'rare'
+  }
+]
+
+export const recipes = [
+  {
+    id: 'r1',
+    resultId: 'time_key',
+    ingredients: ['watch', 'ticket', 'letter'],
+    hint: '时间、离别与未说出口的话，也许能打开某扇门...'
+  },
+  {
+    id: 'r2',
+    resultId: 'promise_ring',
+    ingredients: ['ring', 'necklace', 'promise'],
+    hint: '玩笑的承诺、海边的贝壳与湖边的石头，能否组成真正的约定？'
+  },
+  {
+    id: 'r3',
+    resultId: 'memory_book',
+    ingredients: ['notebook', 'bookmark', 'book'],
+    hint: '她的心事、你的秘密，还有那片秋天的枫叶...'
+  },
+  {
+    id: 'r4',
+    resultId: 'summer_locket',
+    ingredients: ['photo', 'flower', 'icecream'],
+    hint: '盛夏的笑容、紫色的约定，还有那份甜蜜的分享...'
+  },
+  {
+    id: 'r5',
+    resultId: 'eternal_bouquet',
+    ingredients: ['flower', 'balloon', 'carving'],
+    hint: '不会凋谢的花、飘走的愿望，还有刻在树上的心...'
+  },
+  {
+    id: 'r6',
+    resultId: 'lake_message',
+    ingredients: ['bottle', 'necklace', 'promise'],
+    hint: '时间胶囊里的愿望，似乎还缺少什么...'
+  }
+]
+
+export const hiddenMemories = [
+  {
+    id: 'hm1',
+    triggerCraftId: 'time_key',
+    title: '被时间封印的真相',
+    content: '你将时光钥匙插入火车站老钟的钥匙孔，指针开始疯狂转动，停在了五年前的8点22分——火车开走的前一分钟。你终于听到了她最后说的那句话："如果你开口挽留，我会留下来。"原来，只差一分钟，只差一句话。她的身影在雾气中渐渐清晰，"这一次，你还会让我走吗？"她微笑着问。',
+    emotion: 'shocking',
+    year: '时间裂缝',
+    isHidden: true
+  },
+  {
+    id: 'hm2',
+    triggerCraftId: 'promise_ring',
+    title: '七年前的答案',
+    content: '你单膝跪地，将承诺之戒举到她面前。"这一次，不是易拉罐拉环了。"她泪流满面，却笑得那么甜。"你知道吗，七年前的那天，我在包里放了一整天，连睡觉都攥着它。"她伸出手，"我等这个答案，等了七年。"戒指戴在她无名指上的那一刻，雾气奇迹般地散开了。',
+    emotion: 'romantic',
+    year: '第七个夏天',
+    isHidden: true
+  },
+  {
+    id: 'hm3',
+    triggerCraftId: 'memory_book',
+    title: '最后一页',
+    content: '你翻开回忆之书的最后一页，那是她的字迹，却从未被你见过。"亲爱的狐狸：当你看到这一页的时候，我应该已经在去机场的路上了。但我想告诉你——我买了两张票，一张是我的，一张是你的。我在车站等了一个小时，你没有来。我不怪你，我只是想让你知道，我从来没有怪过你。永远爱你的，玫瑰花。"书的夹层里，是一张五年前被退回的机票。',
+    emotion: 'regret',
+    year: '未寄出的告白',
+    isHidden: true
+  },
+  {
+    id: 'hm4',
+    triggerCraftId: 'summer_locket',
+    title: '那年夏天的秘密',
+    content: '打开相片盒的瞬间，一阵凉爽的夏风扑面而来。"其实那天，我许的愿望和你一样。"她的声音在耳边响起。你转过头，看到十七岁的她站在梧桐树下，笑容和照片里一模一样。"我每年生日都许同一个愿望，"她说，"希望你能先说那句——我喜欢你。"照片里的两个人手牵着手，越走越远，消失在夏日的阳光中。',
+    emotion: 'sweet',
+    year: '重回盛夏',
+    isHidden: true
+  },
+  {
+    id: 'hm5',
+    triggerCraftId: 'eternal_bouquet',
+    title: '老树的秘密',
+    content: '你把永恒花束放在老树下，刻着两颗心的地方开始发光。"你知道吗，树真的会长大的。"她的手从后面环住你的腰。"我们的爱情也是。"转过头，她就在你身后，和七年前一样年轻。"我每年都回来看这棵树，"她说，"每年都在两颗心旁边，再刻一个新的年份。"你仔细看，才发现那两颗心旁边，整整齐齐刻着六个年份——一年不差。',
+    emotion: 'touched',
+    year: '树的年轮',
+    isHidden: true
+  },
+  {
+    id: 'hm6',
+    triggerCraftId: 'lake_message',
+    title: '漂流瓶的回信',
+    content: '展开湖水信笺，背面居然还有字——是她后来写的。"五年了，我回来了。瓶子居然还在，这一定是命运吧。如果你也看到了这张纸条，就来湖畔的老地方。我会一直等，等到你来为止。"信的末尾是一个日期，就是今天。你抬起头，雾气缭绕的湖畔，有一个身影正在向你挥手——是她。',
+    emotion: 'determined',
+    year: '命运的回响',
+    isHidden: true
+  }
+]
+
+export const specialEndings = [
+  {
+    id: 'se_true_reunion',
+    requiredCrafts: ['time_key', 'promise_ring'],
+    type: 'legendary',
+    title: '时光尽头的重逢',
+    description: '当承诺之戒戴上她无名指的那一刻，时光钥匙散发出耀眼的光芒。五年的迷雾在瞬间消散，火车站、老街、咖啡馆、公园、书店、湖畔——所有你走过的地方，都开满了紫色的薰衣草。她紧紧握着你的手："这一次，我们再也不分开了。"时间在这一刻停下，定格成永恒的拥抱。原来命运从不残忍，它只是想让你们更懂珍惜。',
+    image: 'legendary'
+  },
+  {
+    id: 'se_complete_memory',
+    requiredCrafts: ['memory_book', 'summer_locket', 'eternal_bouquet', 'lake_message'],
+    type: 'epic',
+    title: '补全的记忆拼图',
+    description: '四件合成之物在空中悬浮，散发出四种不同颜色的光芒，编织成一幅完整的画卷——从第一次约会的薰衣草，到盛夏的冰淇淋，到老树的誓言，再到湖畔的诺言。所有碎片终于拼成了完整的她。"你真的找回了所有的回忆..."她的眼眶泛红，"那么，这次换我来问你——你愿意，和我重新开始吗？"',
+    image: 'epic'
+  },
+  {
+    id: 'se_second_chance',
+    requiredCrafts: ['lake_message'],
+    type: 'special',
+    title: '命运的第二次机会',
+    description: '你奔跑在雾气弥漫的湖畔，那个身影越来越近。五年的思念、遗憾、等待，都化作最后百米的冲刺。"我来了。"你气喘吁吁地说。她笑着，泪水从脸颊滑落："我知道你会来的。"湖水荡漾，映出两个并肩的身影。这一次，谁也没有先放手。有些约定，迟到五年，依然算数。',
+    image: 'special'
+  }
+]

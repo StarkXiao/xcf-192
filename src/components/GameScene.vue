@@ -9,11 +9,15 @@
       </div>
       <div class="header-center">
         <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: progress + '%' }"></div>
-          <span class="progress-text">{{ foundCount }}/{{ totalItems }}</span>
+          <div class="progress-fill" :style="{ width: totalProgress + '%' }"></div>
+          <span class="progress-text">{{ foundCount }}/{{ totalItems }} · 合成 {{ craftedCount }}/{{ totalCraftable }}</span>
         </div>
       </div>
       <div class="header-right">
+        <button class="menu-btn crafting-btn" @click="openCraftingPanel" :title="'旧物合成'">
+          ✨
+          <span v-if="availableRecipesCount > 0" class="craft-badge">{{ availableRecipesCount }}</span>
+        </button>
         <button class="menu-btn" @click="showMenu = !showMenu">
           ⋮
         </button>
@@ -46,6 +50,21 @@
       </div>
     </Transition>
 
+    <div class="crafted-items-bar" v-if="craftedCount > 0">
+      <div class="crafted-bar-label">已合成：</div>
+      <div class="crafted-bar-items">
+        <div
+          v-for="craftId in craftedItems"
+          :key="craftId"
+          class="crafted-bar-item"
+          :class="getCraftedRarityClass(craftId)"
+          :title="getCraftedName(craftId)"
+        >
+          <span class="crafted-bar-icon">{{ getCraftedIcon(craftId) }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="scene-nav">
       <button
         v-for="scene in availableScenes"
@@ -68,8 +87,20 @@
               <span class="stat-value">{{ foundCount }}/{{ totalItems }}</span>
             </div>
             <div class="stat-item">
+              <span class="stat-label">已合成道具</span>
+              <span class="stat-value craft-stat">{{ craftedCount }}/{{ totalCraftable }}</span>
+            </div>
+            <div class="stat-item">
               <span class="stat-label">已触发回忆</span>
               <span class="stat-value">{{ triggeredMemories.length }}/{{ totalItems }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">已解锁隐藏回忆</span>
+              <span class="stat-value hm-stat">{{ unlockedHMCount }}/{{ totalHMCount }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">综合完成度</span>
+              <span class="stat-value total-stat">{{ totalProgress }}%</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">剩余时间</span>
@@ -77,6 +108,9 @@
             </div>
           </div>
           <div class="menu-buttons">
+            <button class="menu-btn-item craft-menu-btn" @click="openCraftingFromMenu">
+              ✨ 旧物合成工坊
+            </button>
             <button class="menu-btn-item" @click="saveAndContinue">
               💾 保存并继续
             </button>
@@ -96,6 +130,7 @@
     </Transition>
 
     <MemoryModal />
+    <CraftingModal />
   </div>
 </template>
 
@@ -105,6 +140,7 @@ import { useGameStore } from '../stores/gameStore'
 import { useStoryStore } from '../stores/storyStore'
 import Timer from './Timer.vue'
 import MemoryModal from './MemoryModal.vue'
+import CraftingModal from './CraftingModal.vue'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -115,10 +151,22 @@ const foundMessage = ref(null)
 const currentSceneId = computed(() => gameStore.currentSceneId)
 const currentScene = computed(() => gameStore.currentScene)
 const progress = computed(() => gameStore.progress)
+const totalProgress = computed(() => gameStore.totalProgress)
 const foundCount = computed(() => gameStore.foundCount)
 const totalItems = computed(() => gameStore.totalItems)
+const craftedCount = computed(() => gameStore.craftedCount)
+const totalCraftable = computed(() => gameStore.totalCraftable)
+const craftedItems = computed(() => gameStore.craftedItems)
 const formattedTime = computed(() => gameStore.formattedTime)
 const triggeredMemories = computed(() => gameStore.triggeredMemories)
+
+const unlockedHMCount = computed(() => gameStore.unlockedHiddenMemories.length)
+const totalHMCount = computed(() => storyStore.getAllHiddenMemories().length)
+
+const availableRecipesCount = computed(() => {
+  const recipes = storyStore.getAllRecipes()
+  return recipes.filter(r => gameStore.canCraftItem(r.id)).length
+})
 
 const availableScenes = computed(() => {
   return storyStore.getAvailableScenes(currentSceneId.value)
@@ -146,6 +194,15 @@ function changeScene(sceneId) {
   gameStore.changeScene(sceneId)
 }
 
+function openCraftingPanel() {
+  gameStore.openCrafting()
+}
+
+function openCraftingFromMenu() {
+  showMenu.value = false
+  gameStore.openCrafting()
+}
+
 function saveAndContinue() {
   gameStore.saveProgress()
   showMenu.value = false
@@ -155,6 +212,21 @@ function confirmExit() {
   if (confirm('确定要返回主页吗？进度已自动保存。')) {
     gameStore.returnToStart()
   }
+}
+
+function getCraftedIcon(craftId) {
+  const item = storyStore.getCraftedItemById(craftId)
+  return item ? item.icon : '❓'
+}
+
+function getCraftedName(craftId) {
+  const item = storyStore.getCraftedItemById(craftId)
+  return item ? item.name : '未知'
+}
+
+function getCraftedRarityClass(craftId) {
+  const item = storyStore.getCraftedItemById(craftId)
+  return item ? `bar-rarity-${item.rarity}` : ''
 }
 </script>
 
@@ -197,11 +269,14 @@ function confirmExit() {
 .header-left,
 .header-right {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .header-center {
   flex: 1;
-  max-width: 200px;
+  max-width: 300px;
 }
 
 .progress-bar {
@@ -215,7 +290,7 @@ function confirmExit() {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #667eea, #764ba2, #d4a574);
   border-radius: 12px;
   transition: width 0.5s ease;
 }
@@ -226,9 +301,10 @@ function confirmExit() {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
 }
 
 .menu-btn {
@@ -245,16 +321,51 @@ function confirmExit() {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .menu-btn:hover {
   background: rgba(0, 0, 0, 0.7);
 }
 
+.crafting-btn {
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.3), rgba(212, 165, 116, 0.2));
+  border-color: rgba(212, 165, 116, 0.4);
+}
+
+.crafting-btn:hover {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.3));
+  box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
+}
+
+.craft-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
 .scene-content {
   position: relative;
   z-index: 10;
-  height: calc(100% - 200px);
+  height: calc(100% - 240px);
   padding: 20px;
 }
 
@@ -334,6 +445,70 @@ function confirmExit() {
   display: none;
 }
 
+.crafted-items-bar {
+  position: absolute;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.crafted-bar-label {
+  color: #a0a0b0;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.crafted-bar-items {
+  display: flex;
+  gap: 4px;
+}
+
+.crafted-bar-item {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.crafted-bar-item:hover {
+  transform: scale(1.15);
+}
+
+.crafted-bar-item.bar-rarity-legendary {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+.crafted-bar-item.bar-rarity-epic {
+  background: rgba(192, 132, 252, 0.15);
+  border-color: rgba(192, 132, 252, 0.4);
+  box-shadow: 0 0 8px rgba(192, 132, 252, 0.2);
+}
+
+.crafted-bar-item.bar-rarity-rare {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.crafted-bar-icon {
+  font-size: 1.1rem;
+}
+
 .scene-nav {
   position: absolute;
   bottom: 15px;
@@ -396,8 +571,10 @@ function confirmExit() {
   border-radius: 20px;
   padding: 2rem;
   width: 100%;
-  max-width: 350px;
+  max-width: 380px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .menu-title {
@@ -415,18 +592,33 @@ function confirmExit() {
 .stat-item {
   display: flex;
   justify-content: space-between;
-  padding: 0.8rem 0;
+  align-items: center;
+  padding: 0.75rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stat-label {
   color: #a0a0b0;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .stat-value {
   color: #e8e8f0;
   font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.stat-value.craft-stat {
+  color: #d4a574;
+}
+
+.stat-value.hm-stat {
+  color: #fbbf24;
+}
+
+.stat-value.total-stat {
+  color: #667eea;
+  font-size: 1rem;
 }
 
 .menu-buttons {
@@ -441,7 +633,7 @@ function confirmExit() {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
   color: #e0e0e0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -449,6 +641,16 @@ function confirmExit() {
 
 .menu-btn-item:hover {
   background: rgba(102, 126, 234, 0.4);
+}
+
+.craft-menu-btn {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.3), rgba(212, 165, 116, 0.2));
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  color: #e8c89a;
+}
+
+.craft-menu-btn:hover {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.3));
 }
 
 .found-toast {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { scenes, memories } from '../data/storyData'
+import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings } from '../data/storyData'
 
 export const useStoryStore = defineStore('story', () => {
   function getSceneById(sceneId) {
@@ -45,7 +45,76 @@ export const useStoryStore = defineStore('story', () => {
     return scene ? scene.items.length : 0
   }
 
-  function getEndingData(foundCount, totalCount, timeUsed) {
+  function getCraftedItemById(craftedId) {
+    return craftedItems.find(c => c.id === craftedId)
+  }
+
+  function getAllCraftedItems() {
+    return craftedItems
+  }
+
+  function getTotalCraftedCount() {
+    return craftedItems.length
+  }
+
+  function getAllRecipes() {
+    return recipes
+  }
+
+  function getRecipeById(recipeId) {
+    return recipes.find(r => r.id === recipeId)
+  }
+
+  function getRecipeByResultId(resultId) {
+    return recipes.find(r => r.resultId === resultId)
+  }
+
+  function getHiddenMemoryByCraftId(craftId) {
+    return hiddenMemories.find(h => h.triggerCraftId === craftId)
+  }
+
+  function getHiddenMemoryById(hmId) {
+    return hiddenMemories.find(h => h.id === hmId)
+  }
+
+  function getAllHiddenMemories() {
+    return hiddenMemories
+  }
+
+  function getAllSpecialEndings() {
+    return specialEndings
+  }
+
+  function checkSpecialEndings(craftedIds) {
+    const matched = []
+    for (const ending of specialEndings) {
+      const hasAll = ending.requiredCrafts.every(craftId => craftedIds.includes(craftId))
+      if (hasAll) {
+        matched.push(ending)
+      }
+    }
+    return matched
+  }
+
+  function getBestEnding(craftedIds) {
+    const matched = checkSpecialEndings(craftedIds)
+    if (matched.length === 0) return null
+    const priority = { legendary: 3, epic: 2, special: 1 }
+    return matched.sort((a, b) => priority[b.type] - priority[a.type])[0]
+  }
+
+  function getEndingData(foundCount, totalCount, timeUsed, craftedIds = []) {
+    const specialEnding = getBestEnding(craftedIds)
+    if (specialEnding) {
+      return {
+        type: specialEnding.type,
+        title: specialEnding.title,
+        description: specialEnding.description,
+        image: specialEnding.image,
+        isSpecial: true
+      }
+    }
+
     const percentage = foundCount / totalCount
     const perfectTime = 180
     
@@ -90,6 +159,18 @@ export const useStoryStore = defineStore('story', () => {
     getAllMemories,
     getTotalItemCount,
     getSceneItemCount,
+    getCraftedItemById,
+    getAllCraftedItems,
+    getTotalCraftedCount,
+    getAllRecipes,
+    getRecipeById,
+    getRecipeByResultId,
+    getHiddenMemoryByCraftId,
+    getHiddenMemoryById,
+    getAllHiddenMemories,
+    getAllSpecialEndings,
+    checkSpecialEndings,
+    getBestEnding,
     getEndingData
   }
 })

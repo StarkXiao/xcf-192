@@ -15,6 +15,10 @@ export const useGameStore = defineStore('game', () => {
   const currentMemory = ref(null)
   const musicEnabled = ref(true)
   const soundEnabled = ref(true)
+  const craftedItems = ref([])
+  const unlockedHiddenMemories = ref([])
+  const showCraftingModal = ref(false)
+  const craftResultMessage = ref(null)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -24,6 +28,10 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const foundCount = computed(() => foundItems.value.length)
+
+  const craftedCount = computed(() => craftedItems.value.length)
+
+  const totalCraftable = computed(() => storyStore.getTotalCraftedCount())
 
   const progress = computed(() => {
     return totalItems.value > 0 ? (foundCount.value / totalItems.value) * 100 : 0
@@ -43,13 +51,21 @@ export const useGameStore = defineStore('game', () => {
     return timeRemaining.value <= 60
   })
 
+  const totalProgress = computed(() => {
+    const itemProgress = totalItems.value > 0 ? foundCount.value / totalItems.value : 0
+    const craftProgress = totalCraftable.value > 0 ? craftedCount.value / totalCraftable.value : 0
+    return Math.round(((itemProgress * 0.6) + (craftProgress * 0.4)) * 100)
+  })
+
   function startGame() {
     const savedGame = saveStore.loadGame()
     if (savedGame) {
       currentSceneId.value = savedGame.currentSceneId
       timeRemaining.value = savedGame.timeRemaining
-      foundItems.value = savedGame.foundItems
-      triggeredMemories.value = savedGame.triggeredMemories
+      foundItems.value = savedGame.foundItems || []
+      triggeredMemories.value = savedGame.triggeredMemories || []
+      craftedItems.value = savedGame.craftedItems || []
+      unlockedHiddenMemories.value = savedGame.unlockedHiddenMemories || []
     } else {
       resetGame()
     }
@@ -62,6 +78,8 @@ export const useGameStore = defineStore('game', () => {
     timeRemaining.value = 300
     foundItems.value = []
     triggeredMemories.value = []
+    craftedItems.value = []
+    unlockedHiddenMemories.value = []
     isPaused.value = false
     saveStore.clearSave()
   }
@@ -121,11 +139,61 @@ export const useGameStore = defineStore('game', () => {
     resumeGame()
   }
 
+  function openCrafting() {
+    showCraftingModal.value = true
+    pauseGame()
+  }
+
+  function closeCrafting() {
+    showCraftingModal.value = false
+    resumeGame()
+  }
+
+  function canCraftItem(recipeId) {
+    const recipe = storyStore.getRecipeById(recipeId)
+    if (!recipe) return false
+    if (craftedItems.value.includes(recipe.resultId)) return false
+    return recipe.ingredients.every(ing => foundItems.value.includes(ing))
+  }
+
+  function craftItem(recipeId) {
+    const recipe = storyStore.getRecipeById(recipeId)
+    if (!recipe || !canCraftItem(recipeId)) return null
+
+    craftedItems.value.push(recipe.resultId)
+    
+    const craftedItem = storyStore.getCraftedItemById(recipe.resultId)
+    craftResultMessage.value = craftedItem
+
+    const hiddenMemory = storyStore.getHiddenMemoryByCraftId(recipe.resultId)
+    if (hiddenMemory && !unlockedHiddenMemories.value.includes(hiddenMemory.id)) {
+      unlockedHiddenMemories.value.push(hiddenMemory.id)
+      setTimeout(() => {
+        craftResultMessage.value = null
+        showMemory(hiddenMemory)
+      }, 2500)
+    } else {
+      setTimeout(() => {
+        craftResultMessage.value = null
+      }, 2500)
+    }
+
+    saveProgress()
+    checkGameComplete()
+    return craftedItem
+  }
+
+  function clearCraftResult() {
+    craftResultMessage.value = null
+  }
+
   function checkGameComplete() {
-    if (foundCount.value >= totalItems.value) {
+    const allItemsFound = foundCount.value >= totalItems.value
+    const allCrafted = craftedCount.value >= totalCraftable.value
+    if (allItemsFound && allCrafted) {
       setTimeout(() => {
         endGame()
-      }, 1500)
+      }, 2000)
     }
   }
 
@@ -143,7 +211,9 @@ export const useGameStore = defineStore('game', () => {
       currentSceneId: currentSceneId.value,
       timeRemaining: timeRemaining.value,
       foundItems: [...foundItems.value],
-      triggeredMemories: [...triggeredMemories.value]
+      triggeredMemories: [...triggeredMemories.value],
+      craftedItems: [...craftedItems.value],
+      unlockedHiddenMemories: [...unlockedHiddenMemories.value]
     })
   }
 
@@ -167,6 +237,14 @@ export const useGameStore = defineStore('game', () => {
     return foundItems.value.includes(itemId)
   }
 
+  function isCrafted(itemId) {
+    return craftedItems.value.includes(itemId)
+  }
+
+  function isHiddenMemoryUnlocked(hmId) {
+    return unlockedHiddenMemories.value.includes(hmId)
+  }
+
   return {
     gameState,
     currentSceneId,
@@ -178,12 +256,19 @@ export const useGameStore = defineStore('game', () => {
     currentMemory,
     musicEnabled,
     soundEnabled,
+    craftedItems,
+    unlockedHiddenMemories,
+    showCraftingModal,
+    craftResultMessage,
     totalItems,
     foundCount,
+    craftedCount,
+    totalCraftable,
     progress,
     currentScene,
     formattedTime,
     isTimeWarning,
+    totalProgress,
     startGame,
     resetGame,
     pauseGame,
@@ -191,11 +276,18 @@ export const useGameStore = defineStore('game', () => {
     changeScene,
     findItem,
     closeMemory,
+    openCrafting,
+    closeCrafting,
+    canCraftItem,
+    craftItem,
+    clearCraftResult,
     endGame,
     saveProgress,
     returnToStart,
     toggleMusic,
     toggleSound,
-    isItemFound
+    isItemFound,
+    isCrafted,
+    isHiddenMemoryUnlocked
   }
 })
