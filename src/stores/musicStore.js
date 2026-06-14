@@ -278,6 +278,19 @@ export const useMusicStore = defineStore('music', () => {
     return 'neutral'
   })
 
+  const memoryImpact = computed(() => {
+    const progress = memoryProgressPercent.value / 100
+    return {
+      chordComplexity: Math.floor(progress * 2),
+      overtoneMultiplier: 1 + progress * 0.6,
+      brightnessBoost: progress * 0.4,
+      extraPadGain: progress * 0.3,
+      filterOpenness: progress * 0.3,
+      reverbBoost: progress * 0.15,
+      chordIntervalExpansion: progress * 2
+    }
+  })
+
   const musicContext = computed(() => {
     const scene = sceneConfig.value
     const time = timeConfig.value
@@ -285,68 +298,98 @@ export const useMusicStore = defineStore('music', () => {
     const ending = endingConfig.value
     const state = gameStateConfig.value
     const period = timePeriodConfig.value
+    const memory = memoryImpact.value
 
-    const baseFilterFreq = Math.max(100, scene.filterFreq + time.filterShift + period.filterOffset)
-    const baseDetune = scene.baseFreq >= 60 ? mood.detune + time.detuneShift + period.detuneOffset : 0
+    const endingBrightness = ending.brightness
+    const endingHarmonic = ending.harmonicShift
+    const endingOvertone = ending.overtoneGain
+    const endingSub = ending.subBassGain
 
-    const chordFreqs = mood.chordIntervals.map(interval => {
-      return scene.baseFreq * Math.pow(2, (interval + ending.harmonicShift * 12) / 12)
+    const baseFilterFreq = Math.max(100, scene.filterFreq + time.filterShift + period.filterOffset + memory.filterOpenness * 500 + endingBrightness * 600)
+    const baseDetune = scene.baseFreq >= 60 ? mood.detune + time.detuneShift + period.detuneOffset + endingHarmonic * 20 : 0
+
+    const expandedChordIntervals = mood.chordIntervals.map((interval, idx) => {
+      return interval + endingHarmonic * 12 + (idx > 2 ? memory.chordIntervalExpansion : 0)
     })
+
+    const activeChordCount = Math.min(
+      mood.chordIntervals.length + memory.chordComplexity,
+      5
+    )
+
+    const chordFreqs = expandedChordIntervals.slice(0, activeChordCount).map(interval => {
+      return scene.baseFreq * Math.pow(2, interval / 12)
+    })
+
+    const memoryBrightness = mood.brightness * (1 + memory.brightnessBoost)
+    const totalBrightness = memoryBrightness * endingBrightness
+
+    const baseGain = mood.volume * state.baseGain * 0.4 * (1 + endingHarmonic * 0.3)
+    const padGain = mood.padGain * mood.volume * state.padGain * 0.3 * (1 + memory.extraPadGain + endingBrightness * 0.3)
+    const chordGain = mood.volume * endingOvertone * state.overtoneGain * memory.overtoneMultiplier * 0.18
+    const pulseGain = time.tensionGain * state.pulseGain * 0.2 * (1 - endingBrightness * 0.3)
+    const noiseGain = (scene.noiseLevel + time.tensionGain * 0.02 + period.noiseOffset) * state.noiseGain * (1 - endingBrightness * 0.25)
+    const subGain = endingSub * mood.volume * state.baseGain * 0.25
+
+    const reverbMix = scene.reverbMix * (1 + memory.reverbBoost + endingBrightness * 0.25)
+    const clampedReverbMix = Math.min(0.9, Math.max(0.1, reverbMix))
 
     return {
       base: {
-        freq: scene.baseFreq,
+        freq: scene.baseFreq * (1 + endingHarmonic * 0.05),
         waveform: scene.baseWaveform,
-        gain: mood.volume * state.baseGain * 0.4,
+        gain: baseGain,
         detune: baseDetune,
         filterFreq: baseFilterFreq,
-        filterQ: scene.filterQ
+        filterQ: scene.filterQ * (1 - endingHarmonic * 0.2)
       },
       pad: {
-        freq: scene.padFreq,
+        freq: scene.padFreq * (1 + endingHarmonic * 0.03),
         waveform: scene.padWaveform,
-        gain: mood.padGain * mood.volume * state.padGain * 0.3,
+        gain: padGain,
         detune: baseDetune * 0.5,
-        filterFreq: Math.max(100, baseFilterFreq * 0.7),
+        filterFreq: Math.max(100, baseFilterFreq * 0.7 + endingBrightness * 300),
         filterQ: scene.filterQ * 0.5
       },
       chord: {
         freqs: chordFreqs,
         waveform: 'sine',
-        gain: mood.volume * ending.overtoneGain * state.overtoneGain * 0.15,
-        detune: baseDetune * 0.3,
-        filterFreq: Math.max(100, baseFilterFreq * 1.2),
+        gain: chordGain,
+        detune: baseDetune * 0.3 + endingHarmonic * 10,
+        filterFreq: Math.max(100, baseFilterFreq * 1.2 + endingBrightness * 500),
         filterQ: scene.filterQ * 0.8
       },
       pulse: {
-        rate: time.pulseRate,
-        gain: time.tensionGain * state.pulseGain * 0.2,
+        rate: time.pulseRate * (1 + (1 - endingBrightness) * 0.3),
+        gain: pulseGain,
         freq: scene.baseFreq * 0.5,
         waveform: 'sine',
         detune: time.detuneShift * 2,
-        filterFreq: Math.max(100, 300 + time.filterShift * 0.5),
+        filterFreq: Math.max(100, 300 + time.filterShift * 0.5 - endingHarmonic * 50),
         filterQ: 3
       },
       noise: {
-        gain: (scene.noiseLevel + time.tensionGain * 0.02 + period.noiseOffset) * state.noiseGain,
-        filterFreq: Math.max(100, baseFilterFreq * 0.5),
+        gain: noiseGain,
+        filterFreq: Math.max(100, baseFilterFreq * 0.5 + endingBrightness * 100),
         filterQ: 0.5
       },
       sub: {
-        freq: scene.baseFreq * 0.5,
+        freq: scene.baseFreq * 0.5 * (1 + endingHarmonic * 0.02),
         waveform: 'sine',
-        gain: ending.subBassGain * mood.volume * state.baseGain * 0.2,
-        detune: 0,
-        filterFreq: Math.max(50, 150 + time.filterShift * 0.3),
+        gain: subGain,
+        detune: endingHarmonic * 5,
+        filterFreq: Math.max(50, 150 + time.filterShift * 0.3 + endingSub * 200),
         filterQ: 1
       },
-      brightness: mood.brightness * ending.brightness,
-      reverbMix: scene.reverbMix,
+      brightness: totalBrightness,
+      reverbMix: clampedReverbMix,
       tempoMultiplier: time.tempoMultiplier,
       sceneCharacter: scene.character,
       timePressure: timePressureLevel.value,
       moodState: moodStateId.value,
-      endingTrajectory: endingTrajectory.value
+      endingTrajectory: computedEndingTrajectory.value,
+      memoryProgress: memoryProgressPercent.value,
+      activeChordCount: activeChordCount
     }
   })
 
@@ -380,6 +423,7 @@ export const useMusicStore = defineStore('music', () => {
     gameStateConfig,
     timePeriodConfig,
     computedEndingTrajectory,
+    memoryImpact,
     musicContext,
     updateContext
   }

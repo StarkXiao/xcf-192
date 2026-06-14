@@ -213,6 +213,7 @@ export const useGameStore = defineStore('game', () => {
     if (calculatedChapter && calculatedChapter.id > currentChapterId.value) {
       advanceChapter(calculatedChapter.id)
     }
+    musicStore.updateContext({ memoryProgress: memoryProgressPercent.value })
   }
 
   function triggerMoodChange(emotion) {
@@ -238,7 +239,11 @@ export const useGameStore = defineStore('game', () => {
     if (!chapter) return
 
     currentChapterId.value = newChapterId
-    musicStore.updateContext({ chapterId: newChapterId })
+    musicStore.updateContext({
+      chapterId: newChapterId,
+      memoryProgress: memoryProgressPercent.value,
+      dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral'
+    })
 
     unlockHintChapter.value = chapter
     showChapterUnlockHint.value = true
@@ -327,7 +332,8 @@ export const useGameStore = defineStore('game', () => {
       moodStateId: moodStore.moodStateId,
       timePeriod: timeStore.currentTimePeriod,
       chapterId: currentChapterId.value,
-      memoryProgress: memoryProgressPercent.value
+      memoryProgress: memoryProgressPercent.value,
+      dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral'
     })
 
     if (!savedGame) {
@@ -470,6 +476,11 @@ export const useGameStore = defineStore('game', () => {
       saveProgress()
       checkChapterProgress()
       checkGameComplete()
+
+      musicStore.updateContext({
+        memoryProgress: memoryProgressPercent.value,
+        moodStateId: moodStore.moodStateId
+      })
     }
   }
 

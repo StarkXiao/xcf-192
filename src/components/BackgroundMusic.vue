@@ -5,6 +5,10 @@
       <span class="layer-dot base"></span>
       <span class="layer-dot mood" :class="moodStateId"></span>
       <span class="layer-dot scene" :class="sceneCharacter"></span>
+      <span class="layer-dot ending" :class="endingTrajectoryClass"></span>
+    </span>
+    <span v-if="musicEnabled" class="memory-progress-bar">
+      <span class="memory-fill" :style="{ width: memoryProgressPercent + '%' }"></span>
     </span>
   </button>
 </template>
@@ -54,6 +58,8 @@ let lerpSpeed = 0.03
 const timePressureClass = computed(() => musicStore.timePressureLevel)
 const moodStateId = computed(() => musicStore.moodStateId)
 const sceneCharacter = computed(() => musicStore.sceneConfig?.character || 'lonely')
+const endingTrajectoryClass = computed(() => musicStore.computedEndingTrajectory || 'neutral')
+const memoryProgressPercent = computed(() => gameStore.memoryProgressPercent || 0)
 
 function lerp(a, b, t) {
   return a + (b - a) * t
@@ -411,7 +417,8 @@ onMounted(() => {
     moodStateId: gameStore.moodStateId,
     timePeriod: gameStore.currentTimePeriod,
     chapterId: gameStore.currentChapterId,
-    memoryProgress: gameStore.memoryProgressPercent
+    memoryProgress: gameStore.memoryProgressPercent,
+    dominantEndingType: gameStore.dominantEndingWeights?.[0]?.[0] || 'neutral'
   })
 
   const initOnInteraction = () => {
@@ -452,16 +459,16 @@ function toggleMusic() {
   top: 15px;
   right: 15px;
   z-index: 1000;
-  height: 44px;
-  border-radius: 22px;
+  height: 50px;
+  border-radius: 25px;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 14px 0 10px;
+  gap: 8px;
+  padding: 0 16px 0 12px;
   transition: all 0.3s ease;
 }
 
@@ -517,6 +524,34 @@ function toggleMusic() {
 .layer-dot.scene.serene { background: rgba(100, 180, 130, 0.6); }
 .layer-dot.scene.contemplative { background: rgba(140, 110, 80, 0.6); }
 .layer-dot.scene.mysterious { background: rgba(80, 100, 160, 0.6); }
+
+.layer-dot.ending {
+  background: rgba(180, 100, 200, 0.7);
+  animation: layerPulse 5s ease-in-out infinite;
+}
+
+.layer-dot.ending.dark { background: rgba(60, 30, 80, 0.85); box-shadow: 0 0 6px rgba(60, 30, 80, 0.8); }
+.layer-dot.ending.bittersweet { background: rgba(120, 80, 120, 0.8); box-shadow: 0 0 6px rgba(120, 80, 120, 0.8); }
+.layer-dot.ending.neutral { background: rgba(150, 140, 160, 0.75); box-shadow: 0 0 6px rgba(150, 140, 160, 0.8); }
+.layer-dot.ending.bright { background: rgba(220, 180, 100, 0.85); box-shadow: 0 0 8px rgba(220, 180, 100, 0.9); }
+.layer-dot.ending.transcendent { background: rgba(180, 220, 255, 0.95); box-shadow: 0 0 12px rgba(180, 220, 255, 1); }
+
+.memory-progress-bar {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.memory-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(150, 200, 255, 0.4), rgba(180, 220, 255, 0.8));
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 4px rgba(150, 200, 255, 0.6);
+}
 
 @keyframes layerPulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
