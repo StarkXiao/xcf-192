@@ -21,6 +21,11 @@ export const useGameStore = defineStore('game', () => {
   const showCraftingModal = ref(false)
   const craftResultMessage = ref(null)
   const showArchiveModal = ref(false)
+  const currentChapterId = ref(1)
+  const showChapterNarration = ref(false)
+  const currentNarrationChapter = ref(null)
+  const showChapterUnlockHint = ref(false)
+  const unlockHintChapter = ref(null)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -60,6 +65,85 @@ export const useGameStore = defineStore('game', () => {
     return Math.round(((itemProgress * 0.6) + (craftProgress * 0.4)) * 100)
   })
 
+  const memoryPercent = computed(() => {
+    return storyStore.getMemoryPercent(foundCount.value, totalItems.value)
+  })
+
+  const currentChapter = computed(() => {
+    return storyStore.getChapterById(currentChapterId.value)
+  })
+
+  const nextChapter = computed(() => {
+    return storyStore.getNextChapter(memoryPercent.value)
+  })
+
+  const chapterProgress = computed(() => {
+    return storyStore.getChapterProgress(memoryPercent.value)
+  })
+
+  const currentChapterAtmosphere = computed(() => {
+    return storyStore.getChapterAtmosphere(currentChapterId.value)
+  })
+
+  const isFinalChapter = computed(() => {
+    const chapter = currentChapter.value
+    return chapter ? chapter.isFinalChapter : false
+  })
+
+  function checkChapterProgress() {
+    const calculatedChapter = storyStore.getCurrentChapter(memoryPercent.value)
+    if (calculatedChapter && calculatedChapter.id > currentChapterId.value) {
+      advanceChapter(calculatedChapter.id)
+    }
+  }
+
+  function advanceChapter(newChapterId) {
+    const chapter = storyStore.getChapterById(newChapterId)
+    if (!chapter) return
+
+    currentChapterId.value = newChapterId
+
+    unlockHintChapter.value = chapter
+    showChapterUnlockHint.value = true
+    setTimeout(() => {
+      showChapterUnlockHint.value = false
+    }, 3000)
+
+    setTimeout(() => {
+      currentNarrationChapter.value = chapter
+      showChapterNarration.value = true
+      pauseGame()
+    }, 500)
+
+    if (chapter.isFinalChapter) {
+      checkGameComplete()
+    }
+
+    saveProgress()
+  }
+
+  function closeChapterNarration() {
+    showChapterNarration.value = false
+    currentNarrationChapter.value = null
+    resumeGame()
+  }
+
+  function getAvailableScenesForChapter() {
+    const chapter = currentChapter.value
+    if (!chapter) return []
+    return storyStore.getAvailableScenes(currentSceneId.value).filter(
+      scene => chapter.unlockedScenes.includes(scene.id)
+    )
+  }
+
+  function isSceneAccessible(sceneId) {
+    return storyStore.isSceneUnlocked(sceneId, currentChapterId.value)
+  }
+
+  function getCurrentSceneDescription() {
+    return storyStore.getChapterSceneDescription(currentSceneId.value, currentChapterId.value)
+  }
+
   function startGame() {
     const savedGame = saveStore.loadGame()
     if (savedGame) {
@@ -69,11 +153,20 @@ export const useGameStore = defineStore('game', () => {
       triggeredMemories.value = savedGame.triggeredMemories || []
       craftedItems.value = savedGame.craftedItems || []
       unlockedHiddenMemories.value = savedGame.unlockedHiddenMemories || []
+      currentChapterId.value = savedGame.currentChapterId || 1
     } else {
       resetGame()
     }
     gameState.value = 'playing'
     startTimer()
+
+    if (!savedGame) {
+      setTimeout(() => {
+        currentNarrationChapter.value = storyStore.getChapterById(1)
+        showChapterNarration.value = true
+        pauseGame()
+      }, 500)
+    }
   }
 
   function startGameFromBranch(branchId) {
@@ -86,6 +179,7 @@ export const useGameStore = defineStore('game', () => {
     triggeredMemories.value = branchData.triggeredMemories || []
     craftedItems.value = branchData.craftedItems || []
     unlockedHiddenMemories.value = branchData.unlockedHiddenMemories || []
+    currentChapterId.value = branchData.currentChapterId || 1
     isPaused.value = false
 
     saveStore.saveGame({
@@ -94,7 +188,8 @@ export const useGameStore = defineStore('game', () => {
       foundItems: [...foundItems.value],
       triggeredMemories: [...triggeredMemories.value],
       craftedItems: [...craftedItems.value],
-      unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+      unlockedHiddenMemories: [...unlockedHiddenMemories.value],
+      currentChapterId: currentChapterId.value
     })
 
     gameState.value = 'playing'
@@ -109,6 +204,7 @@ export const useGameStore = defineStore('game', () => {
     triggeredMemories.value = []
     craftedItems.value = []
     unlockedHiddenMemories.value = []
+    currentChapterId.value = 1
     isPaused.value = false
     saveStore.clearSave()
   }
@@ -153,6 +249,7 @@ export const useGameStore = defineStore('game', () => {
       }
       archiveToGlobal()
       saveProgress()
+      checkChapterProgress()
       checkGameComplete()
     }
   }
@@ -217,12 +314,14 @@ export const useGameStore = defineStore('game', () => {
         foundItems: [...foundItems.value],
         triggeredMemories: [...triggeredMemories.value],
         craftedItems: [...craftedItems.value],
-        unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+        unlockedHiddenMemories: [...unlockedHiddenMemories.value],
+        currentChapterId: currentChapterId.value
       }
     )
 
     archiveToGlobal()
     saveProgress()
+    checkChapterProgress()
     checkGameComplete()
     return craftedItem
   }
@@ -264,7 +363,8 @@ export const useGameStore = defineStore('game', () => {
       foundCount.value,
       totalItems.value,
       timeUsed,
-      [...craftedItems.value]
+      [...craftedItems.value],
+      currentChapterId.value
     )
 
     archiveStore.recordEnding(ending)
@@ -281,7 +381,8 @@ export const useGameStore = defineStore('game', () => {
         foundItems: [...foundItems.value],
         triggeredMemories: [...triggeredMemories.value],
         craftedItems: [...craftedItems.value],
-        unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+        unlockedHiddenMemories: [...unlockedHiddenMemories.value],
+        currentChapterId: currentChapterId.value
       }
     )
 
@@ -297,7 +398,8 @@ export const useGameStore = defineStore('game', () => {
       foundItems: [...foundItems.value],
       triggeredMemories: [...triggeredMemories.value],
       craftedItems: [...craftedItems.value],
-      unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+      unlockedHiddenMemories: [...unlockedHiddenMemories.value],
+      currentChapterId: currentChapterId.value
     })
   }
 
@@ -353,6 +455,11 @@ export const useGameStore = defineStore('game', () => {
     showCraftingModal,
     craftResultMessage,
     showArchiveModal,
+    currentChapterId,
+    showChapterNarration,
+    currentNarrationChapter,
+    showChapterUnlockHint,
+    unlockHintChapter,
     totalItems,
     foundCount,
     craftedCount,
@@ -362,6 +469,12 @@ export const useGameStore = defineStore('game', () => {
     formattedTime,
     isTimeWarning,
     totalProgress,
+    memoryPercent,
+    currentChapter,
+    nextChapter,
+    chapterProgress,
+    currentChapterAtmosphere,
+    isFinalChapter,
     startGame,
     startGameFromBranch,
     resetGame,
@@ -384,6 +497,12 @@ export const useGameStore = defineStore('game', () => {
     isCrafted,
     isHiddenMemoryUnlocked,
     openArchive,
-    closeArchive
+    closeArchive,
+    checkChapterProgress,
+    advanceChapter,
+    closeChapterNarration,
+    getAvailableScenesForChapter,
+    isSceneAccessible,
+    getCurrentSceneDescription
   }
 })

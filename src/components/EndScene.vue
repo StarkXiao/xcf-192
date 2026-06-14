@@ -22,6 +22,14 @@
       </p>
       
       <div class="game-stats">
+        <div class="stat-row chapter-stat-row">
+          <span class="stat-icon">📖</span>
+          <span class="stat-label">抵达章节</span>
+          <span class="stat-value chapter-stat-end">
+            <span class="chapter-end-icon">{{ chapterIcon }}</span>
+            {{ currentChapterName }}
+          </span>
+        </div>
         <div class="stat-row">
           <span class="stat-icon">💎</span>
           <span class="stat-label">找到物品</span>
@@ -202,8 +210,23 @@ const formattedTimeUsed = computed(() => {
   return `${minutes}分${seconds}秒`
 })
 
+const currentChapterId = computed(() => gameStore.currentChapterId)
+
+const currentChapterName = computed(() => {
+  const chapter = storyStore.getChapterById(currentChapterId.value)
+  return chapter ? chapter.name : '未知'
+})
+
+const chapterIcon = computed(() => {
+  const chapter = storyStore.getChapterById(currentChapterId.value)
+  if (!chapter) return '📖'
+  if (chapter.isFinalChapter) return '🌟'
+  const icons = ['🚂', '👣', '☀️', '💍']
+  return icons[chapter.id - 1] || '📖'
+})
+
 const endingData = computed(() => {
-  return storyStore.getEndingData(foundCount.value, totalItems.value, timeUsed.value, craftedItems.value)
+  return storyStore.getEndingData(foundCount.value, totalItems.value, timeUsed.value, craftedItems.value, currentChapterId.value)
 })
 
 const endingType = computed(() => endingData.value?.type || 'normal')
@@ -940,5 +963,29 @@ function returnHome() {
 
 .branch-item:hover .branch-item-action {
   opacity: 1;
+}
+
+.chapter-stat-row {
+  border-bottom: 1px solid rgba(212, 165, 116, 0.2);
+  padding-bottom: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.chapter-stat-end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #d4a574;
+  font-weight: 600;
+}
+
+.end-scene.legendary .chapter-stat-end,
+.end-scene.epic .chapter-stat-end,
+.end-scene.special .chapter-stat-end {
+  color: #ffd700;
+}
+
+.chapter-end-icon {
+  font-size: 1.2rem;
 }
 </style>

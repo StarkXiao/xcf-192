@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings } from '../data/storyData'
+import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters } from '../data/storyData'
 
 export const useStoryStore = defineStore('story', () => {
   function getSceneById(sceneId) {
@@ -85,26 +85,88 @@ export const useStoryStore = defineStore('story', () => {
     return specialEndings
   }
 
-  function checkSpecialEndings(craftedIds) {
+  function getAllChapters() {
+    return chapters
+  }
+
+  function getChapterById(chapterId) {
+    return chapters.find(c => c.id === chapterId)
+  }
+
+  function getCurrentChapter(memoryPercent) {
+    let currentChapter = chapters[0]
+    for (const chapter of chapters) {
+      if (memoryPercent >= chapter.requiredMemoryPercent) {
+        currentChapter = chapter
+      }
+    }
+    return currentChapter
+  }
+
+  function getNextChapter(memoryPercent) {
+    for (const chapter of chapters) {
+      if (memoryPercent < chapter.requiredMemoryPercent) {
+        return chapter
+      }
+    }
+    return null
+  }
+
+  function getChapterProgress(memoryPercent) {
+    const current = getCurrentChapter(memoryPercent)
+    const next = getNextChapter(memoryPercent)
+    if (!next) return 100
+    const range = next.requiredMemoryPercent - current.requiredMemoryPercent
+    const progress = memoryPercent - current.requiredMemoryPercent
+    return Math.min(100, Math.round((progress / range) * 100))
+  }
+
+  function isSceneUnlocked(sceneId, chapterId) {
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return false
+    return chapter.unlockedScenes.includes(sceneId)
+  }
+
+  function getChapterAtmosphere(chapterId) {
+    const chapter = getChapterById(chapterId)
+    return chapter ? chapter.atmosphere : null
+  }
+
+  function getChapterSceneDescription(sceneId, chapterId) {
+    const chapter = getChapterById(chapterId)
+    if (chapter && chapter.sceneDescriptions && chapter.sceneDescriptions[sceneId]) {
+      return chapter.sceneDescriptions[sceneId]
+    }
+    const scene = getSceneById(sceneId)
+    return scene ? scene.description : ''
+  }
+
+  function getMemoryPercent(foundCount, totalItems) {
+    if (totalItems === 0) return 0
+    return Math.round((foundCount / totalItems) * 100)
+  }
+
+  function checkSpecialEndings(craftedIds, chapterId = 5) {
     const matched = []
     for (const ending of specialEndings) {
       const hasAll = ending.requiredCrafts.every(craftId => craftedIds.includes(craftId))
-      if (hasAll) {
+      const meetsChapter = !ending.requiredChapter || chapterId >= ending.requiredChapter
+      if (hasAll && meetsChapter) {
         matched.push(ending)
       }
     }
     return matched
   }
 
-  function getBestEnding(craftedIds) {
-    const matched = checkSpecialEndings(craftedIds)
+  function getBestEnding(craftedIds, chapterId = 5) {
+    const matched = checkSpecialEndings(craftedIds, chapterId)
     if (matched.length === 0) return null
     const priority = { legendary: 3, epic: 2, special: 1 }
     return matched.sort((a, b) => priority[b.type] - priority[a.type])[0]
   }
 
-  function getEndingData(foundCount, totalCount, timeUsed, craftedIds = []) {
-    const specialEnding = getBestEnding(craftedIds)
+  function getEndingData(foundCount, totalCount, timeUsed, craftedIds = [], chapterId = 1) {
+    const specialEnding = getBestEnding(craftedIds, chapterId)
     if (specialEnding) {
       return {
         type: specialEnding.type,
@@ -171,6 +233,15 @@ export const useStoryStore = defineStore('story', () => {
     getAllSpecialEndings,
     checkSpecialEndings,
     getBestEnding,
-    getEndingData
+    getEndingData,
+    getAllChapters,
+    getChapterById,
+    getCurrentChapter,
+    getNextChapter,
+    getChapterProgress,
+    isSceneUnlocked,
+    getChapterAtmosphere,
+    getChapterSceneDescription,
+    getMemoryPercent
   }
 })

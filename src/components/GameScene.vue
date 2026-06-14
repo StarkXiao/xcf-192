@@ -1,10 +1,34 @@
 <template>
-  <div class="game-scene" :style="{ background: currentScene?.backgroundStyle }">
-    <div class="fog-overlay" :style="{ opacity: currentScene?.fogIntensity || 0.5 }"></div>
-    <div class="fog-overlay fog-overlay-2" :style="{ opacity: (currentScene?.fogIntensity || 0.5) * 0.6 }"></div>
+  <div 
+    class="game-scene" 
+    :style="gameSceneStyle"
+    :class="{ 'final-chapter-active': isFinalChapter }"
+  >
+    <div 
+      class="fog-overlay" 
+      :style="{ opacity: adjustedFogIntensity }"
+    ></div>
+    <div 
+      class="fog-overlay fog-overlay-2" 
+      :style="{ opacity: adjustedFogIntensity * 0.6 }"
+    ></div>
+    <div 
+      v-if="currentChapterAtmosphere?.backgroundTint" 
+      class="atmosphere-tint"
+      :style="{ background: currentChapterAtmosphere.backgroundTint }"
+    ></div>
     
     <div class="game-header">
       <div class="header-left">
+        <div class="chapter-indicator">
+          <span class="chapter-icon">{{ chapterIcon }}</span>
+          <div class="chapter-info">
+            <span class="chapter-name">{{ currentChapter?.name }}</span>
+            <div class="chapter-progress-mini">
+              <div class="mini-progress-fill" :style="{ width: chapterProgress + '%' }"></div>
+            </div>
+          </div>
+        </div>
         <Timer />
       </div>
       <div class="header-center">
@@ -24,10 +48,17 @@
       </div>
     </div>
 
+    <div v-if="nextChapter" class="next-chapter-hint">
+      <span class="hint-text">
+        下一章节：{{ nextChapter.name }}
+        <span class="hint-percent">(需 {{ nextChapter.requiredMemoryPercent }}% 回忆完成度)</span>
+      </span>
+    </div>
+
     <Transition name="fade" mode="out-in">
       <div :key="currentSceneId" class="scene-content">
         <h2 class="scene-title text-shadow">{{ currentScene?.name }}</h2>
-        <p class="scene-description text-shadow">{{ currentScene?.description }}</p>
+        <p class="scene-description text-shadow">{{ currentSceneDescription }}</p>
         
         <div class="scene-items">
           <div
@@ -67,12 +98,17 @@
 
     <div class="scene-nav">
       <button
-        v-for="scene in availableScenes"
+        v-for="scene in availableScenesFiltered"
         :key="scene.id"
         class="nav-btn"
-        @click="changeScene(scene.id)"
+        :class="{ 'scene-locked': !isSceneAccessible(scene.id) }"
+        @click="isSceneAccessible(scene.id) && changeScene(scene.id)"
+        :disabled="!isSceneAccessible(scene.id)"
+        :title="isSceneAccessible(scene.id) ? '' : '需要完成更多回忆解锁此区域'"
       >
-        <span class="nav-arrow">→</span>
+        <span class="nav-arrow">
+          {{ isSceneAccessible(scene.id) ? '→' : '🔒' }}
+        </span>
         <span class="nav-name">{{ scene.name }}</span>
       </button>
     </div>
@@ -82,6 +118,21 @@
         <div class="menu-panel">
           <h3 class="menu-title">游戏菜单</h3>
           <div class="menu-stats">
+            <div class="stat-item chapter-stat">
+              <span class="stat-label">当前章节</span>
+              <span class="stat-value chapter-stat-value">
+                <span class="chapter-stat-icon">{{ chapterIcon }}</span>
+                {{ currentChapter?.name }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">回忆完成度</span>
+              <span class="stat-value">{{ memoryPercent }}%</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">章节进度</span>
+              <span class="stat-value">{{ chapterProgress }}%</span>
+            </div>
             <div class="stat-item">
               <span class="stat-label">已找到物品</span>
               <span class="stat-value">{{ foundCount }}/{{ totalItems }}</span>
@@ -131,6 +182,7 @@
 
     <MemoryModal />
     <CraftingModal />
+    <ChapterNarration />
   </div>
 </template>
 
@@ -141,6 +193,7 @@ import { useStoryStore } from '../stores/storyStore'
 import Timer from './Timer.vue'
 import MemoryModal from './MemoryModal.vue'
 import CraftingModal from './CraftingModal.vue'
+import ChapterNarration from './ChapterNarration.vue'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -160,6 +213,14 @@ const craftedItems = computed(() => gameStore.craftedItems)
 const formattedTime = computed(() => gameStore.formattedTime)
 const triggeredMemories = computed(() => gameStore.triggeredMemories)
 
+const memoryPercent = computed(() => gameStore.memoryPercent)
+const currentChapter = computed(() => gameStore.currentChapter)
+const nextChapter = computed(() => gameStore.nextChapter)
+const chapterProgress = computed(() => gameStore.chapterProgress)
+const currentChapterAtmosphere = computed(() => gameStore.currentChapterAtmosphere)
+const isFinalChapter = computed(() => gameStore.isFinalChapter)
+const currentSceneDescription = computed(() => gameStore.getCurrentSceneDescription())
+
 const unlockedHMCount = computed(() => gameStore.unlockedHiddenMemories.length)
 const totalHMCount = computed(() => storyStore.getAllHiddenMemories().length)
 
@@ -168,9 +229,42 @@ const availableRecipesCount = computed(() => {
   return recipes.filter(r => gameStore.canCraftItem(r.id)).length
 })
 
+const chapterIcon = computed(() => {
+  if (!currentChapter.value) return '📖'
+  if (currentChapter.value.isFinalChapter) return '🌟'
+  const icons = ['🚂', '👣', '☀️', '💍']
+  return icons[currentChapter.value.id - 1] || '📖'
+})
+
+const adjustedFogIntensity = computed(() => {
+  const baseFog = currentScene.value?.fogIntensity || 0.5
+  const multiplier = currentChapterAtmosphere.value?.fogMultiplier || 1
+  return Math.max(0, Math.min(1, baseFog * multiplier))
+})
+
+const gameSceneStyle = computed(() => {
+  const style = {
+    background: currentScene.value?.backgroundStyle
+  }
+  if (currentChapterAtmosphere.value) {
+    if (currentChapterAtmosphere.value.brightness) {
+      style.filter = `brightness(${currentChapterAtmosphere.value.brightness}) saturate(${currentChapterAtmosphere.value.saturation || 1})`
+    }
+  }
+  return style
+})
+
 const availableScenes = computed(() => {
   return storyStore.getAvailableScenes(currentSceneId.value)
 })
+
+const availableScenesFiltered = computed(() => {
+  return gameStore.getAvailableScenesForChapter()
+})
+
+function isSceneAccessible(sceneId) {
+  return gameStore.isSceneAccessible(sceneId)
+}
 
 function isItemFound(itemId) {
   return gameStore.isItemFound(itemId)
@@ -684,5 +778,142 @@ function getCraftedRarityClass(craftId) {
 
 .toast-icon {
   font-size: 1.5rem;
+}
+
+.atmosphere-tint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+  transition: background 1s ease;
+}
+
+.chapter-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 8px;
+}
+
+.final-chapter-active .chapter-indicator {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.3);
+  animation: finalChapterPulse 2s ease-in-out infinite;
+}
+
+@keyframes finalChapterPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); }
+}
+
+.chapter-icon {
+  font-size: 1.2rem;
+}
+
+.chapter-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chapter-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #d4a574;
+  white-space: nowrap;
+}
+
+.final-chapter-active .chapter-name {
+  color: #ffd700;
+}
+
+.chapter-progress-mini {
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4a574, #ffd700);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.next-chapter-hint {
+  position: absolute;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: hintFloat 3s ease-in-out infinite;
+}
+
+@keyframes hintFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}
+
+.hint-text {
+  font-size: 0.72rem;
+  color: #a0a0b0;
+}
+
+.hint-percent {
+  color: #d4a574;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.nav-btn.scene-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(100, 100, 120, 0.4);
+}
+
+.nav-btn.scene-locked:hover {
+  background: rgba(100, 100, 120, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: none;
+}
+
+.nav-btn.scene-locked .nav-arrow {
+  opacity: 0.7;
+}
+
+.chapter-stat {
+  border-top: 1px solid rgba(212, 165, 116, 0.2);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.chapter-stat-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #d4a574;
+}
+
+.final-chapter-active .chapter-stat-value {
+  color: #ffd700;
+}
+
+.chapter-stat-icon {
+  font-size: 1.1rem;
 }
 </style>

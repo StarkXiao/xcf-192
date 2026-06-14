@@ -497,6 +497,7 @@ export const specialEndings = [
   {
     id: 'se_true_reunion',
     requiredCrafts: ['time_key', 'promise_ring'],
+    requiredChapter: 5,
     type: 'legendary',
     title: '时光尽头的重逢',
     description: '当承诺之戒戴上她无名指的那一刻，时光钥匙散发出耀眼的光芒。五年的迷雾在瞬间消散，火车站、老街、咖啡馆、公园、书店、湖畔——所有你走过的地方，都开满了紫色的薰衣草。她紧紧握着你的手："这一次，我们再也不分开了。"时间在这一刻停下，定格成永恒的拥抱。原来命运从不残忍，它只是想让你们更懂珍惜。',
@@ -505,6 +506,7 @@ export const specialEndings = [
   {
     id: 'se_complete_memory',
     requiredCrafts: ['memory_book', 'summer_locket', 'eternal_bouquet', 'lake_message'],
+    requiredChapter: 5,
     type: 'epic',
     title: '补全的记忆拼图',
     description: '四件合成之物在空中悬浮，散发出四种不同颜色的光芒，编织成一幅完整的画卷——从第一次约会的薰衣草，到盛夏的冰淇淋，到老树的誓言，再到湖畔的诺言。所有碎片终于拼成了完整的她。"你真的找回了所有的回忆..."她的眼眶泛红，"那么，这次换我来问你——你愿意，和我重新开始吗？"',
@@ -513,9 +515,115 @@ export const specialEndings = [
   {
     id: 'se_second_chance',
     requiredCrafts: ['lake_message'],
+    requiredChapter: 4,
     type: 'special',
     title: '命运的第二次机会',
     description: '你奔跑在雾气弥漫的湖畔，那个身影越来越近。五年的思念、遗憾、等待，都化作最后百米的冲刺。"我来了。"你气喘吁吁地说。她笑着，泪水从脸颊滑落："我知道你会来的。"湖水荡漾，映出两个并肩的身影。这一次，谁也没有先放手。有些约定，迟到五年，依然算数。',
     image: 'special'
+  }
+]
+
+export const chapters = [
+  {
+    id: 1,
+    name: '序章·归乡',
+    requiredMemoryPercent: 0,
+    unlockNarration: '五年了。你终于回到了这座城市。雾气依旧，熟悉又陌生。火车站的钟声响起，仿佛在提醒你——有些东西，从未真正离开。',
+    chapterNarration: '【第一章 · 归乡的站台】\n\n火车缓缓驶入雾城车站。你提着行李箱走下车，熟悉的雾气扑面而来。五年前，你就是在这里与她分别的。\n\n站台空荡荡的，只有你一个人。但你总觉得，她的身影就在雾气的深处，若隐若现。\n\n"先从这里开始吧。"你对自己说。',
+    unlockedScenes: ['station'],
+    atmosphere: {
+      fogMultiplier: 1.2,
+      brightness: 0.8,
+      saturation: 0.7,
+      backgroundTint: 'rgba(20, 20, 50, 0.3)'
+    },
+    sceneDescriptions: {
+      station: '五年前，你就是在这里与她分别。雾气比记忆中更浓，几乎看不清站台的尽头...'
+    }
+  },
+  {
+    id: 2,
+    name: '第一章·初遇的痕迹',
+    requiredMemoryPercent: 15,
+    unlockNarration: '你找到了第一件旧物，回忆的大门缓缓打开。那些被尘封的往事，开始一点点浮现。雾城的其他角落，似乎也在向你招手。',
+    chapterNarration: '【第二章 · 初遇的街角】\n\n旧车票上的日期依然清晰。你握着那张泛黄的纸片，眼眶有些发热。\n\n"如果那天我开口挽留..."这个念头无数次在脑海中浮现。但你知道，时光无法倒流。\n\n至少，你还可以寻找。寻找那些遗落在这座城市里的，属于你们的痕迹。\n\n雾气似乎淡了一些。你看到了通往老街的路。',
+    unlockedScenes: ['station', 'street', 'cafe'],
+    atmosphere: {
+      fogMultiplier: 1.0,
+      brightness: 0.9,
+      saturation: 0.8,
+      backgroundTint: 'rgba(30, 30, 60, 0.2)'
+    },
+    sceneDescriptions: {
+      station: '雾气比刚来时淡了一些，你能隐约看到站台的出口了。',
+      street: '熟悉的街道，两旁的梧桐树还是老样子。雾气中，仿佛能听到曾经的笑声...',
+      cafe: '你们第一次约会的地方。靠窗的位置，还留着她最喜欢的拿铁香味...'
+    }
+  },
+  {
+    id: 3,
+    name: '第二章·盛夏的记忆',
+    requiredMemoryPercent: 35,
+    unlockNarration: '越来越多的回忆被唤醒。你仿佛看到了年少的你们，在这座城市的各个角落留下足迹。盛夏的阳光，似乎能穿透这层层迷雾。',
+    chapterNarration: '【第三章 · 盛夏的公园】\n\n你找到了那张被雨水打湿的合照。照片上的你们笑得那么灿烂，仿佛永远不会有烦恼。\n\n那是你们在一起的第三个夏天。你记得那天的阳光很暖，风很轻，她的笑容比阳光还要耀眼。\n\n"我们要永远这样开心。"她当时这么说。\n\n你握紧了照片。现在，你只想找到更多。\n\n雾气又淡了一些。你看到了通往公园和书店的路。',
+    unlockedScenes: ['station', 'street', 'cafe', 'park', 'bookstore'],
+    atmosphere: {
+      fogMultiplier: 0.8,
+      brightness: 1.0,
+      saturation: 0.9,
+      backgroundTint: 'rgba(255, 150, 100, 0.1)'
+    },
+    sceneDescriptions: {
+      station: '雾气渐渐散去，你甚至能看到几年前你们刻在长椅上的名字。',
+      street: '熟悉的街道，两旁的梧桐树还是老样子。雾气中，仿佛能听到曾经的笑声...',
+      cafe: '你们第一次约会的地方。靠窗的位置，还留着她最喜欢的拿铁香味...',
+      park: '傍晚时分的公园，夕阳穿过雾气，洒下金色的光芒。那座长椅上，刻着你们的名字...',
+      bookstore: '她最爱来的书店，书架间似乎还能看到她专注读书的身影...'
+    }
+  },
+  {
+    id: 4,
+    name: '第三章·永恒的诺言',
+    requiredMemoryPercent: 60,
+    unlockNarration: '大部分的回忆已经找回。你开始明白，有些东西从未改变。雾气笼罩的湖畔，是你们许下诺言的地方。也许，答案就在那里。',
+    chapterNarration: '【第四章 · 雾霭湖畔】\n\n你翻开了她的日记本，看到了最后那句话："如果我开口挽留，你会留下吗？"\n\n心脏像是被什么东西紧紧攥住。原来，她也在等。\n\n五年前的那个下午，你们都在等对方先开口。然后，就错过了。\n\n但现在还不晚。你知道她在哪里——那个你们许下永恒诺言的地方。\n\n雾气几乎散尽了。通往湖畔的路，清晰可见。',
+    unlockedScenes: ['station', 'street', 'cafe', 'park', 'bookstore', 'lake'],
+    atmosphere: {
+      fogMultiplier: 0.5,
+      brightness: 1.1,
+      saturation: 1.0,
+      backgroundTint: 'rgba(100, 150, 200, 0.1)'
+    },
+    sceneDescriptions: {
+      station: '阳光透过雾气洒落，整个站台都笼罩在一层金色的光晕中。',
+      street: '熟悉的街道，两旁的梧桐树还是老样子。雾气中，仿佛能听到曾经的笑声...',
+      cafe: '你们第一次约会的地方。靠窗的位置，还留着她最喜欢的拿铁香味...',
+      park: '傍晚时分的公园，夕阳穿过雾气，洒下金色的光芒。那座长椅上，刻着你们的名字...',
+      bookstore: '她最爱来的书店，书架间似乎还能看到她专注读书的身影...',
+      lake: '湖面上的雾气正在渐渐散去。五年前的夏天，你们曾在这里许下诺言...'
+    }
+  },
+  {
+    id: 5,
+    name: '终章·重逢',
+    requiredMemoryPercent: 85,
+    unlockNarration: '所有的回忆碎片都已归位。你终于明白了她的心意，也明白了自己的心意。雾气即将完全散去，命运的重逢，就在眼前。',
+    chapterNarration: '【终章 · 雾散之时】\n\n你站在湖畔，看着最后一缕雾气消散在阳光中。\n\n所有的回忆都已找回。从初遇的薰衣草，到盛夏的冰淇淋，从老树的誓言，到湖畔的诺言——每一片碎片，都拼成了完整的她。\n\n你终于懂了。五年前的错过，是因为你们都太骄傲，都在等对方先开口。\n\n但这一次，你不会再等了。\n\n你抬起头，看到湖畔的那个身影。她穿着白色的连衣裙，和五年前一模一样。\n\n她也看到了你，微微一笑，泪光闪烁。\n\n"你来了。"她说。\n\n"我来了。"你回答。',
+    unlockedScenes: ['station', 'street', 'cafe', 'park', 'bookstore', 'lake'],
+    atmosphere: {
+      fogMultiplier: 0.1,
+      brightness: 1.3,
+      saturation: 1.2,
+      backgroundTint: 'rgba(255, 220, 150, 0.15)'
+    },
+    sceneDescriptions: {
+      station: '阳光明媚，雾气完全消散。这座火车站，见证了你们的离别，也将见证你们的重逢。',
+      street: '阳光洒满老街，梧桐树叶沙沙作响，仿佛在为你们的重逢鼓掌。',
+      cafe: '咖啡馆里飘来浓郁的咖啡香，靠窗的位置似乎还留着她的温度。',
+      park: '金色的夕阳洒在公园的每一个角落，老树上的两颗心，在阳光下闪闪发光。',
+      bookstore: '书店的风铃响起，她最喜欢的那本书，正放在最显眼的位置。',
+      lake: '湖水如镜，倒映着蓝天白云。她就在那里，等着你。'
+    },
+    isFinalChapter: true
   }
 ]
