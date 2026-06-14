@@ -453,10 +453,33 @@ function isItemFound(itemId) {
 }
 
 function handleItemClick(item) {
+  if (isItemFogHidden(item.id)) return
   if (!isItemFound(item.id)) {
     gameStore.findItem(item.id)
     showFoundMessage(item)
   }
+}
+
+function handleFakeClueClick(fakeClue) {
+  gameStore.clickFakeClue(fakeClue.id)
+}
+
+function closeFakeClueModal() {
+  gameStore.closeFakeClueModal()
+}
+
+function isItemFogHidden(itemId) {
+  return gameStore.isItemFogHidden(itemId)
+}
+
+function isFogRevealed(itemId) {
+  return gameStore.recentlyUnlockedFogItems.includes(itemId)
+}
+
+function getFogDensity(itemId) {
+  const fogItem = storyStore.getFogHiddenItemByItemId(itemId)
+  if (!fogItem) return 0
+  return fogItem.fogDensity || 0.7
 }
 
 function showFoundMessage(item) {
@@ -1514,5 +1537,323 @@ function getStarStyle(index) {
 
 .chapter-stat-icon {
   font-size: 1.1rem;
+}
+
+.fake-clue {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: blur(1px);
+  animation: fakeCluePulse 3s ease-in-out infinite;
+}
+
+.fake-clue:hover {
+  opacity: 0.9;
+  filter: blur(0.5px);
+  transform: scale(1.05);
+  border-color: rgba(255, 150, 150, 0.5);
+}
+
+.fake-clue .fake-icon {
+  opacity: 0.6;
+  filter: blur(0.5px);
+}
+
+.fake-clue .fake-hint {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: rgba(200, 100, 100, 0.7);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: bold;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.fake-fog-effect {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(circle, rgba(200, 150, 150, 0.2) 0%, transparent 60%);
+  pointer-events: none;
+  animation: fakeFogDrift 4s ease-in-out infinite;
+}
+
+@keyframes fakeCluePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes fakeFogDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5%, -3%) scale(1.05); }
+}
+
+.fake-type-mirage {
+  animation: mirageShimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes mirageShimmer {
+  0%, 100% { filter: blur(1px) hue-rotate(0deg); }
+  50% { filter: blur(0.5px) hue-rotate(5deg); }
+}
+
+.scene-item.fog-hidden {
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.scene-item.fog-hidden .item-icon {
+  opacity: 0.15;
+  filter: blur(4px);
+  transform: scale(0.8);
+}
+
+.scene-item.fog-hidden .item-hint {
+  display: none;
+}
+
+.item-fog-overlay {
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background: radial-gradient(circle, rgba(180, 180, 220, calc(0.4 * var(--fog-density, 0.7))) 0%, transparent 65%);
+  pointer-events: none;
+  animation: itemFogSwirl 5s ease-in-out infinite;
+  z-index: 5;
+}
+
+@keyframes itemFogSwirl {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  25% { transform: translate(3%, -2%) rotate(5deg) scale(1.03); }
+  50% { transform: translate(-2%, -4%) rotate(-3deg) scale(1.06); }
+  75% { transform: translate(-4%, 1%) rotate(3deg) scale(1.02); }
+}
+
+.scene-item.fog-reveal {
+  animation: fogReveal 2s ease-out forwards;
+}
+
+.scene-item.fog-reveal .item-fog-overlay {
+  animation: fogRevealOverlay 2s ease-out forwards;
+}
+
+.scene-item.fog-reveal .item-icon {
+  animation: fogRevealIcon 2s ease-out forwards;
+}
+
+@keyframes fogReveal {
+  0% { pointer-events: none; }
+  100% { pointer-events: auto; }
+}
+
+@keyframes fogRevealOverlay {
+  0% { opacity: 1; }
+  60% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+
+@keyframes fogRevealIcon {
+  0% { opacity: 0.15; filter: blur(4px); transform: scale(0.8); }
+  50% { opacity: 0.5; filter: blur(2px); transform: scale(1.1); }
+  100% { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
+.fog-unlock-toast {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.9), rgba(255, 215, 0, 0.8));
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: white;
+  font-weight: 600;
+  z-index: 50;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+}
+
+.fog-unlock-icon {
+  font-size: 1.3rem;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.fog-unlock-text {
+  font-size: 0.9rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.2) rotate(15deg); opacity: 0.8; }
+}
+
+.fog-unlock-enter-active {
+  animation: fogUnlockIn 0.6s ease-out;
+}
+
+.fog-unlock-leave-active {
+  animation: fogUnlockOut 0.4s ease-in;
+}
+
+@keyframes fogUnlockIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes fogUnlockOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.9);
+  }
+}
+
+.fake-clue-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.fake-clue-panel {
+  background: linear-gradient(145deg, rgba(40, 30, 40, 0.98), rgba(30, 25, 35, 0.99));
+  border-radius: 20px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid rgba(200, 100, 100, 0.3);
+  box-shadow: 0 0 40px rgba(200, 100, 100, 0.2);
+  animation: fakeClueModalIn 0.4s ease-out;
+}
+
+@keyframes fakeClueModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.fake-clue-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.fake-clue-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 0 10px rgba(200, 100, 100, 0.5));
+}
+
+.fake-clue-title {
+  color: #e8b4b4;
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.1rem;
+}
+
+.fake-clue-divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(200, 100, 100, 0.5), transparent);
+  margin: 0 auto 1.5rem;
+}
+
+.fake-clue-text {
+  color: #c0b0c0;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  text-align: justify;
+  text-indent: 2em;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.fake-clue-penalty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(200, 100, 100, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(200, 100, 100, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.penalty-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.penalty-icon {
+  font-size: 1.1rem;
+}
+
+.time-penalty .penalty-text {
+  color: #f0a0a0;
+}
+
+.mood-penalty .penalty-text {
+  color: #a0a0f0;
+}
+
+.fake-clue-close-btn {
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(200, 100, 100, 0.3), rgba(150, 80, 80, 0.2));
+  color: #e8c8c8;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(200, 100, 100, 0.3);
+  letter-spacing: 0.1rem;
+}
+
+.fake-clue-close-btn:hover {
+  background: linear-gradient(135deg, rgba(200, 100, 100, 0.4), rgba(150, 80, 80, 0.3));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(200, 100, 100, 0.3);
 }
 </style>
