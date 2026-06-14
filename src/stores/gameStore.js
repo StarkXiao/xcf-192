@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useStoryStore } from './storyStore'
 import { useSaveStore } from './saveStore'
+import { useArchiveStore } from './archiveStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -19,9 +20,11 @@ export const useGameStore = defineStore('game', () => {
   const unlockedHiddenMemories = ref([])
   const showCraftingModal = ref(false)
   const craftResultMessage = ref(null)
+  const showArchiveModal = ref(false)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
+  const archiveStore = useArchiveStore()
 
   const totalItems = computed(() => {
     return storyStore.getTotalItemCount()
@@ -73,6 +76,32 @@ export const useGameStore = defineStore('game', () => {
     startTimer()
   }
 
+  function startGameFromBranch(branchId) {
+    const branchData = archiveStore.loadBranchSave(branchId)
+    if (!branchData) return false
+
+    currentSceneId.value = branchData.currentSceneId || 'station'
+    timeRemaining.value = branchData.timeRemaining || 300
+    foundItems.value = branchData.foundItems || []
+    triggeredMemories.value = branchData.triggeredMemories || []
+    craftedItems.value = branchData.craftedItems || []
+    unlockedHiddenMemories.value = branchData.unlockedHiddenMemories || []
+    isPaused.value = false
+
+    saveStore.saveGame({
+      currentSceneId: currentSceneId.value,
+      timeRemaining: timeRemaining.value,
+      foundItems: [...foundItems.value],
+      triggeredMemories: [...triggeredMemories.value],
+      craftedItems: [...craftedItems.value],
+      unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+    })
+
+    gameState.value = 'playing'
+    startTimer()
+    return true
+  }
+
   function resetGame() {
     currentSceneId.value = 'station'
     timeRemaining.value = 300
@@ -122,6 +151,7 @@ export const useGameStore = defineStore('game', () => {
         triggeredMemories.value.push(memory.id)
         showMemory(memory)
       }
+      archiveToGlobal()
       saveProgress()
       checkGameComplete()
     }
@@ -161,7 +191,7 @@ export const useGameStore = defineStore('game', () => {
     if (!recipe || !canCraftItem(recipeId)) return null
 
     craftedItems.value.push(recipe.resultId)
-    
+
     const craftedItem = storyStore.getCraftedItemById(recipe.resultId)
     craftResultMessage.value = craftedItem
 
@@ -178,6 +208,20 @@ export const useGameStore = defineStore('game', () => {
       }, 2500)
     }
 
+    const craftedName = craftedItem ? craftedItem.name : recipe.resultId
+    archiveStore.createBranchSave(
+      `合成「${craftedName}」后`,
+      {
+        currentSceneId: currentSceneId.value,
+        timeRemaining: timeRemaining.value,
+        foundItems: [...foundItems.value],
+        triggeredMemories: [...triggeredMemories.value],
+        craftedItems: [...craftedItems.value],
+        unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+      }
+    )
+
+    archiveToGlobal()
     saveProgress()
     checkGameComplete()
     return craftedItem
@@ -185,6 +229,18 @@ export const useGameStore = defineStore('game', () => {
 
   function clearCraftResult() {
     craftResultMessage.value = null
+  }
+
+  function archiveToGlobal() {
+    if (craftedItems.value.length > 0) {
+      archiveStore.recordCraftedItems(craftedItems.value)
+    }
+    if (unlockedHiddenMemories.value.length > 0) {
+      archiveStore.recordHiddenMemories(unlockedHiddenMemories.value)
+    }
+    if (triggeredMemories.value.length > 0) {
+      archiveStore.recordTriggeredMemories(triggeredMemories.value)
+    }
   }
 
   function checkGameComplete() {
@@ -202,8 +258,21 @@ export const useGameStore = defineStore('game', () => {
       clearInterval(timerInterval.value)
       timerInterval.value = null
     }
-    gameState.value = 'end'
+
+    const timeUsed = 300 - timeRemaining.value
+    const ending = storyStore.getEndingData(
+      foundCount.value,
+      totalItems.value,
+      timeUsed,
+      [...craftedItems.value]
+    )
+
+    archiveStore.recordEnding(ending)
+    archiveToGlobal()
+
     saveStore.clearSave()
+
+    gameState.value = 'end'
   }
 
   function saveProgress() {
@@ -245,6 +314,14 @@ export const useGameStore = defineStore('game', () => {
     return unlockedHiddenMemories.value.includes(hmId)
   }
 
+  function openArchive() {
+    showArchiveModal.value = true
+  }
+
+  function closeArchive() {
+    showArchiveModal.value = false
+  }
+
   return {
     gameState,
     currentSceneId,
@@ -260,6 +337,7 @@ export const useGameStore = defineStore('game', () => {
     unlockedHiddenMemories,
     showCraftingModal,
     craftResultMessage,
+    showArchiveModal,
     totalItems,
     foundCount,
     craftedCount,
@@ -270,6 +348,7 @@ export const useGameStore = defineStore('game', () => {
     isTimeWarning,
     totalProgress,
     startGame,
+    startGameFromBranch,
     resetGame,
     pauseGame,
     resumeGame,
@@ -288,6 +367,8 @@ export const useGameStore = defineStore('game', () => {
     toggleSound,
     isItemFound,
     isCrafted,
-    isHiddenMemoryUnlocked
+    isHiddenMemoryUnlocked,
+    openArchive,
+    closeArchive
   }
 })

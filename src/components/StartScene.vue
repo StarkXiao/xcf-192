@@ -19,8 +19,9 @@
         <ul>
           <li>⏱️ 在5分钟内寻找散落在各处的旧物</li>
           <li>💫 每找到一件物品，都会触发一段回忆</li>
+          <li>✨ 跨场景收集线索，合成关键道具解锁隐藏回忆</li>
           <li>🗺️ 点击场景名称可以切换不同地点</li>
-          <li>💾 游戏会自动保存进度</li>
+          <li>💾 游戏会自动保存，结局与回忆永久记录在档案中</li>
         </ul>
       </div>
 
@@ -34,25 +35,44 @@
         <button v-else class="btn btn-primary" @click="startNewGame">
           开始游戏
         </button>
+        <button v-if="hasArchive" class="btn btn-archive" @click="openArchive">
+          📖 回忆档案 ({{ archiveSummary }})
+        </button>
       </div>
 
-      <div class="version-info">v1.0.0 | 雾城工作室</div>
+      <div class="version-info">v1.1.0 | 雾城工作室</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { useSaveStore } from '../stores/saveStore'
+import { useArchiveStore } from '../stores/archiveStore'
 
 const gameStore = useGameStore()
 const saveStore = useSaveStore()
+const archiveStore = useArchiveStore()
 
 const hasSave = saveStore.hasSave
 
+const hasArchive = computed(() => archiveStore.hasArchive)
+
+const archiveSummary = computed(() => {
+  const endings = archiveStore.unlockedEndings.length
+  const hm = archiveStore.everUnlockedHiddenMemories.length
+  const branches = archiveStore.branchSaves.length
+  const parts = []
+  if (endings > 0) parts.push(`${endings}结局`)
+  if (hm > 0) parts.push(`${hm}回忆`)
+  if (branches > 0) parts.push(`${branches}存档`)
+  return parts.length > 0 ? parts.join('/') : ''
+})
+
 onMounted(() => {
   saveStore.checkHasSave()
+  archiveStore.init()
 })
 
 function startNewGame() {
@@ -69,6 +89,10 @@ function newGame() {
     gameStore.resetGame()
     gameStore.startGame()
   }
+}
+
+function openArchive() {
+  gameStore.openArchive()
 }
 </script>
 
@@ -220,6 +244,18 @@ function newGame() {
 .btn-outline:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-archive {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.3), rgba(212, 165, 116, 0.15));
+  border: 1px solid rgba(212, 165, 116, 0.4);
+  color: #e8c89a;
+}
+
+.btn-archive:hover {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.25));
+  box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+  transform: translateY(-2px);
 }
 
 .version-info {

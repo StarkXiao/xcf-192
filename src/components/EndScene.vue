@@ -64,16 +64,19 @@
             v-for="crafted in allCraftedItems"
             :key="crafted.id"
             class="crafted-end-card"
-            :class="{ unlocked: isCrafted(crafted.id), [`end-rarity-${crafted.rarity}`]: true }"
+            :class="{ unlocked: isCraftedVisible(crafted.id), [`end-rarity-${crafted.rarity}`]: true }"
           >
             <span class="crafted-end-icon">
-              {{ isCrafted(crafted.id) ? crafted.icon : '🔒' }}
+              {{ isCraftedVisible(crafted.id) ? crafted.icon : '🔒' }}
             </span>
             <span class="crafted-end-name">
-              {{ isCrafted(crafted.id) ? crafted.name : '???' }}
+              {{ isCraftedVisible(crafted.id) ? crafted.name : '???' }}
             </span>
-            <span v-if="isCrafted(crafted.id)" class="crafted-end-rarity" :class="`end-rarity-${crafted.rarity}`">
+            <span v-if="isCraftedVisible(crafted.id)" class="crafted-end-rarity" :class="`end-rarity-${crafted.rarity}`">
               {{ getRarityLabel(crafted.rarity) }}
+            </span>
+            <span v-if="isCraftedVisible(crafted.id) && !isCraftedCurrent(crafted.id) && isCraftedEver(crafted.id)" class="crafted-ever-tag">
+              历史周目
             </span>
           </div>
         </div>
@@ -89,13 +92,16 @@
               v-for="memory in allHiddenMemories"
               :key="memory.id"
               class="memory-card hidden-card"
-              :class="{ unlocked: isHiddenMemoryUnlocked(memory.id) }"
+              :class="{ unlocked: isHMVisible(memory.id) }"
             >
               <span class="memory-card-icon">
-                {{ isHiddenMemoryUnlocked(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
+                {{ isHMVisible(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
               </span>
               <span class="memory-card-title">
-                {{ isHiddenMemoryUnlocked(memory.id) ? memory.title : '???' }}
+                {{ isHMVisible(memory.id) ? memory.title : '???' }}
+              </span>
+              <span v-if="isHMVisible(memory.id) && !isHMCurrent(memory.id) && isHMEver(memory.id)" class="memory-ever-tag">
+                历史
               </span>
             </div>
           </div>
@@ -108,15 +114,32 @@
               v-for="memory in allMemories"
               :key="memory.id"
               class="memory-card"
-              :class="{ unlocked: isMemoryUnlocked(memory.id) }"
+              :class="{ unlocked: isMemoryVisible(memory.id) }"
             >
               <span class="memory-card-icon">
-                {{ isMemoryUnlocked(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
+                {{ isMemoryVisible(memory.id) ? getEmojiForEmotion(memory.emotion) : '🔒' }}
               </span>
               <span class="memory-card-title">
-                {{ isMemoryUnlocked(memory.id) ? memory.title : '???' }}
+                {{ isMemoryVisible(memory.id) ? memory.title : '???' }}
               </span>
             </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="archive-hint" v-if="archiveEndings > 0">
+        <span class="hint-icon">📖</span>
+        跨周目已解锁 {{ archiveEndings }} 个结局、{{ archiveHM }} 个隐藏回忆
+        <button class="hint-btn" @click="openArchive">查看档案</button>
+      </div>
+      
+      <div class="branch-continue" v-if="hasBranches">
+        <h4 class="branch-title">🌿 从分支存档继续</h4>
+        <div class="branch-list">
+          <div v-for="branch in recentBranches" :key="branch.id" class="branch-item" @click="loadBranch(branch.id)">
+            <span class="branch-item-icon">🌿</span>
+            <span class="branch-item-label">{{ branch.label }}</span>
+            <span class="branch-item-action">继续 →</span>
           </div>
         </div>
       </div>
@@ -141,9 +164,11 @@
 import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { useStoryStore } from '../stores/storyStore'
+import { useArchiveStore } from '../stores/archiveStore'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
+const archiveStore = useArchiveStore()
 
 const timeUsed = ref(300 - gameStore.timeRemaining)
 const foundCount = computed(() => gameStore.foundCount)
@@ -157,6 +182,12 @@ const unlockedHM = computed(() => gameStore.unlockedHiddenMemories.length)
 const totalHM = computed(() => storyStore.getAllHiddenMemories().length)
 const allHiddenMemories = computed(() => storyStore.getAllHiddenMemories())
 const allCraftedItems = computed(() => storyStore.getAllCraftedItems())
+
+const archiveEndings = computed(() => archiveStore.unlockedEndings.length)
+const archiveHM = computed(() => archiveStore.everUnlockedHiddenMemories.length)
+
+const hasBranches = computed(() => archiveStore.branchSaves.length > 0)
+const recentBranches = computed(() => [...archiveStore.branchSaves].reverse().slice(0, 4))
 
 const completionRate = computed(() => {
   const itemRate = totalItems.value > 0 ? foundCount.value / totalItems.value : 0
@@ -205,12 +236,40 @@ function isMemoryUnlocked(memoryId) {
   return gameStore.triggeredMemories.includes(memoryId)
 }
 
+function isMemoryVisible(memoryId) {
+  return isMemoryUnlocked(memoryId) || archiveStore.isMemoryEverTriggered(memoryId)
+}
+
 function isHiddenMemoryUnlocked(hmId) {
   return gameStore.isHiddenMemoryUnlocked(hmId)
 }
 
+function isHMVisible(hmId) {
+  return isHiddenMemoryUnlocked(hmId) || archiveStore.isHiddenMemoryEverUnlocked(hmId)
+}
+
+function isHMCurrent(hmId) {
+  return gameStore.isHiddenMemoryUnlocked(hmId)
+}
+
+function isHMEver(hmId) {
+  return archiveStore.isHiddenMemoryEverUnlocked(hmId)
+}
+
 function isCrafted(craftId) {
   return gameStore.isCrafted(craftId)
+}
+
+function isCraftedVisible(craftId) {
+  return isCrafted(craftId) || archiveStore.isCraftedItemEverObtained(craftId)
+}
+
+function isCraftedCurrent(craftId) {
+  return gameStore.isCrafted(craftId)
+}
+
+function isCraftedEver(craftId) {
+  return archiveStore.isCraftedItemEverObtained(craftId)
 }
 
 function getRarityLabel(rarity) {
@@ -235,6 +294,14 @@ function getEmojiForEmotion(emotion) {
     determined: '💪'
   }
   return emotions[emotion] || '💭'
+}
+
+function openArchive() {
+  gameStore.openArchive()
+}
+
+function loadBranch(branchId) {
+  gameStore.startGameFromBranch(branchId)
 }
 
 function playAgain() {
@@ -761,5 +828,117 @@ function returnHome() {
   color: #606070;
   font-size: 0.85rem;
   letter-spacing: 0.1rem;
+}
+
+.crafted-ever-tag {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(212, 165, 116, 0.15);
+  color: #d4a574;
+  border: 1px solid rgba(212, 165, 116, 0.2);
+}
+
+.memory-ever-tag {
+  font-size: 0.55rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
+  background: rgba(212, 165, 116, 0.12);
+  color: #d4a574;
+}
+
+.archive-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: rgba(212, 165, 116, 0.06);
+  border: 1px solid rgba(212, 165, 116, 0.15);
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  color: #a0a0b0;
+}
+
+.hint-icon {
+  font-size: 1.1rem;
+}
+
+.hint-btn {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  border-radius: 14px;
+  background: rgba(212, 165, 116, 0.1);
+  color: #d4a574;
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hint-btn:hover {
+  background: rgba(212, 165, 116, 0.2);
+}
+
+.branch-continue {
+  margin-bottom: 1.5rem;
+  background: rgba(100, 200, 150, 0.04);
+  border: 1px solid rgba(100, 200, 150, 0.15);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.branch-title {
+  margin: 0 0 0.8rem 0;
+  color: #86efac;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.branch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.branch-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.branch-item:hover {
+  background: rgba(100, 200, 150, 0.1);
+  border-color: rgba(100, 200, 150, 0.3);
+}
+
+.branch-item-icon {
+  font-size: 1rem;
+}
+
+.branch-item-label {
+  flex: 1;
+  color: #c0c0d0;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.branch-item-action {
+  color: #86efac;
+  font-size: 0.78rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.branch-item:hover .branch-item-action {
+  opacity: 1;
 }
 </style>
