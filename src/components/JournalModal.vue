@@ -88,6 +88,8 @@
                     <p v-else class="memory-locked">回忆尚未唤醒</p>
                     <div v-if="memory.unlocked" class="memory-footer">
                       <span class="memory-year">📅 {{ memory.year }}</span>
+                      <span class="memory-location">📍 {{ memory.sceneName }}</span>
+                      <span class="memory-chapter">📖 {{ memory.chapterName }}</span>
                       <span class="memory-read-hint">阅读全文 →</span>
                     </div>
                   </div>
@@ -99,6 +101,7 @@
                   <span class="section-icon">💕</span>
                   人物关系
                 </h3>
+                <p class="rel-section-hint">基于已收集的旧物与回忆整理 · 随探索逐步浮现</p>
                 <div class="relationship-map">
                   <div class="relationship-center">
                     <div class="center-avatar">👤</div>
@@ -117,10 +120,19 @@
                         <span class="node-icon">{{ rel.icon }}</span>
                       </div>
                       <div class="connection-info">
-                        <h4 class="connection-name">{{ rel.name }}</h4>
+                        <div class="connection-name-row">
+                          <h4 class="connection-name">{{ rel.name }}</h4>
+                          <span v-if="rel.badge" class="rel-badge">{{ rel.badge }}</span>
+                        </div>
                         <p v-if="rel.unlocked" class="connection-relation">{{ rel.relation }}</p>
-                        <p v-else class="connection-locked">关系未知</p>
+                        <p v-else class="connection-locked">关系未知 · 探索相关场景</p>
                         <p v-if="rel.unlocked" class="connection-memory">"{{ rel.memory }}"</p>
+                        <div v-if="rel.stats" class="rel-stats">
+                          <div v-for="(val, key) in rel.stats" :key="key" class="rel-stat">
+                            <span class="stat-key">{{ key }}</span>
+                            <span class="stat-val">{{ val }}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -215,6 +227,8 @@
               </div>
               <div class="detail-meta">
                 <span class="meta-tag">📅 {{ detailItem.year }}</span>
+                <span class="meta-tag">📍 {{ detailItem.sceneName }}</span>
+                <span class="meta-tag">📖 {{ detailItem.chapterName }}</span>
                 <span class="meta-tag" :style="{ color: getEmotionColor(detailItem.emotion) }">{{ getEmotionName(detailItem.emotion) }}</span>
               </div>
               <div class="detail-divider"></div>
@@ -233,6 +247,7 @@ import { ref, computed, watch } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { useStoryStore } from '../stores/storyStore'
 import { useArchiveStore } from '../stores/archiveStore'
+import { scenes, chapters } from '../data/storyData'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -248,6 +263,28 @@ const showModal = computed(() => gameStore.showJournalModal)
 
 const currentYear = new Date().getFullYear()
 
+const ITEM_LOCATION_MAP = {}
+const ITEM_CHAPTER_MAP = {}
+const SCENE_ICON_MAP = { station: '🚂', street: '🏘️', cafe: '☕', park: '🌳', bookstore: '📚', lake: '🌊' }
+
+for (const chapter of chapters) {
+  for (const sceneId of chapter.unlockedScenes) {
+    const scene = scenes.find(s => s.id === sceneId)
+    if (scene) {
+      for (const item of scene.items) {
+        if (!ITEM_LOCATION_MAP[item.id]) ITEM_LOCATION_MAP[item.id] = sceneId
+        if (!ITEM_CHAPTER_MAP[item.id]) ITEM_CHAPTER_MAP[item.id] = chapter.id
+      }
+    }
+  }
+}
+
+const HIDDEN_MEMORY_META = {
+  hm1: { chapterId: 'ch3', sceneId: 'park', sceneName: '公园', chapterName: '盛夏的记忆' },
+  hm2: { chapterId: 'ch2', sceneId: 'cafe', sceneName: '街角咖啡馆', chapterName: '初遇的痕迹' },
+  hm3: { chapterId: 'ch4', sceneId: 'lake', sceneName: '湖畔公园', chapterName: '星光下的约定' }
+}
+
 const chapterFilters = computed(() => {
   const chapters = storyStore.getAllChapters()
   return [{ id: 'all', name: '全部' }, ...chapters.map(c => ({ id: c.id, name: c.name }))]
@@ -255,26 +292,55 @@ const chapterFilters = computed(() => {
 
 const sceneFilters = computed(() => {
   const scenes = storyStore.getAllScenes()
-  const icons = { station: '🚂', street: '🏘️', cafe: '☕', park: '🌳', bookstore: '📚', lake: '🌊' }
-  return [{ id: 'all', name: '全部', icon: '🌍' }, ...scenes.map(s => ({ id: s.id, name: s.name, icon: icons[s.id] || '📍' }))]
+  return [{ id: 'all', name: '全部', icon: '🌍' }, ...scenes.map(s => ({ id: s.id, name: s.name, icon: SCENE_ICON_MAP[s.id] || '📍' }))]
 })
+
+function getItemLocationInfo(itemId) {
+  const sceneId = ITEM_LOCATION_MAP[itemId]
+  const chapterId = ITEM_CHAPTER_MAP[itemId]
+  const scene = scenes.find(s => s.id === sceneId)
+  const chapter = chapters.find(c => c.id === chapterId)
+  return {
+    sceneId: sceneId,
+    sceneName: scene?.name || '未知地点',
+    chapterId: chapterId,
+    chapterName: chapter?.name || '未知章节'
+  }
+}
+
+function getMemoryLocationInfo(memory) {
+  if (memory.isHidden) {
+    const meta = HIDDEN_MEMORY_META[memory.id]
+    if (meta) {
+      return {
+        sceneId: meta.sceneId,
+        sceneName: meta.sceneName,
+        chapterId: meta.chapterId,
+        chapterName: meta.chapterName
+      }
+    }
+    return { sceneId: 'all', sceneName: '跨区域', chapterId: 'ch5', chapterName: '终章：重聚' }
+  }
+  return getItemLocationInfo(memory.triggerItemId)
+}
 
 const allItems = computed(() => {
   const scenes = storyStore.getAllScenes()
   const items = []
   for (const scene of scenes) {
-    if (selectedScene.value !== 'all' && scene.id !== selectedScene.value) continue
     for (const item of scene.items) {
+      const locInfo = getItemLocationInfo(item.id)
+      if (selectedScene.value !== 'all' && locInfo.sceneId !== selectedScene.value) continue
+      if (selectedChapter.value !== 'all' && locInfo.chapterId !== selectedChapter.value) continue
+
       const unlocked = gameStore.isItemFound(item.id) || archiveStore.isMemoryEverTriggered(storyStore.getMemoryByItemId(item.id)?.id)
       const memory = storyStore.getMemoryByItemId(item.id)
-      const chapter = getItemChapter(item.id)
-      if (selectedChapter.value !== 'all' && chapter?.id !== selectedChapter.value) continue
       items.push({
         ...item,
-        sceneId: scene.id,
-        sceneName: scene.name,
-        chapterId: chapter?.id,
-        chapterName: chapter?.name,
+        sceneId: locInfo.sceneId,
+        sceneName: locInfo.sceneName,
+        chapterId: locInfo.chapterId,
+        chapterName: locInfo.chapterName,
         unlocked,
         memory: unlocked ? memory : null
       })
@@ -284,93 +350,230 @@ const allItems = computed(() => {
 })
 
 const allMemories = computed(() => {
-  const normalMemories = storyStore.getAllMemories().map(m => ({
-    ...m,
-    isHidden: false,
-    excerpt: m.content.substring(0, 50) + '...',
-    unlocked: gameStore.triggeredMemories.includes(m.id) || archiveStore.isMemoryEverTriggered(m.id)
-  }))
-  const hiddenMemories = storyStore.getAllHiddenMemories().map(hm => ({
-    ...hm,
-    excerpt: hm.content.substring(0, 50) + '...',
-    unlocked: gameStore.isHiddenMemoryUnlocked(hm.id) || archiveStore.isHiddenMemoryEverUnlocked(hm.id)
-  }))
+  const normalMemories = storyStore.getAllMemories().map(m => {
+    const locInfo = getItemLocationInfo(m.triggerItemId)
+    return {
+      ...m,
+      isHidden: false,
+      excerpt: m.content.substring(0, 50) + '...',
+      unlocked: gameStore.triggeredMemories.includes(m.id) || archiveStore.isMemoryEverTriggered(m.id),
+      sceneId: locInfo.sceneId,
+      sceneName: locInfo.sceneName,
+      chapterId: locInfo.chapterId,
+      chapterName: locInfo.chapterName
+    }
+  })
+  const hiddenMemories = storyStore.getAllHiddenMemories().map(hm => {
+    const locInfo = getMemoryLocationInfo({ ...hm, isHidden: true })
+    return {
+      ...hm,
+      isHidden: true,
+      excerpt: hm.content.substring(0, 50) + '...',
+      unlocked: gameStore.isHiddenMemoryUnlocked(hm.id) || archiveStore.isHiddenMemoryEverUnlocked(hm.id),
+      sceneId: locInfo.sceneId,
+      sceneName: locInfo.sceneName,
+      chapterId: locInfo.chapterId,
+      chapterName: locInfo.chapterName
+    }
+  })
   return [...normalMemories, ...hiddenMemories].filter(m => {
-    if (selectedScene.value !== 'all') {
-      if (m.isHidden) return false
-      const item = storyStore.getItemById(m.triggerItemId)
-      if (!item) return false
-      const itemScene = findSceneForItem(item.id)
-      return itemScene?.id === selectedScene.value
-    }
-    if (selectedChapter.value !== 'all') {
-      if (m.isHidden) return true
-      const chapter = getItemChapter(m.triggerItemId)
-      return chapter?.id === selectedChapter.value
-    }
+    if (selectedScene.value !== 'all' && m.sceneId !== selectedScene.value) return false
+    if (selectedChapter.value !== 'all' && m.chapterId !== selectedChapter.value) return false
     return true
   })
 })
 
 const relationships = computed(() => {
-  const rels = [
-    {
-      id: 'her',
-      name: '她',
-      icon: '👩',
-      relation: '恋人',
-      color: '#ff6b9d',
-      angle: 0,
-      memory: '「如果你开口挽留，我会留下来。」',
-      unlocked: gameStore.triggeredMemories.length > 0 || archiveStore.everTriggeredMemories.length > 0
-    },
-    {
-      id: 'best_friend',
-      name: '旧时好友',
-      icon: '👨‍🦱',
-      relation: '挚友',
-      color: '#667eea',
-      angle: 72,
-      memory: '「你们是天造地设的一对。」',
-      unlocked: gameStore.foundItems.length >= 5 || archiveStore.everCraftedItems.length > 0
-    },
-    {
-      id: 'cafe_owner',
-      name: '咖啡馆老板',
-      icon: '👨‍🍳',
-      relation: '熟人',
-      color: '#d4a574',
-      angle: 144,
-      memory: '「靠窗的位置，一直为你们留着。」',
-      unlocked: gameStore.isItemFound('cup') || archiveStore.isMemoryEverTriggered('m7')
-    },
-    {
-      id: 'bookstore_clerk',
-      name: '书店店员',
-      icon: '👩‍💼',
-      relation: '熟人',
-      color: '#8b7355',
-      angle: 216,
-      memory: '「她经常来这里，每次都找同一本书。」',
-      unlocked: gameStore.isItemFound('book') || archiveStore.isMemoryEverTriggered('m13')
-    },
-    {
-      id: 'old_neighbor',
-      name: '老邻居',
-      icon: '👴',
-      relation: '长辈',
-      color: '#6b8e23',
-      angle: 288,
-      memory: '「你们两个，从小就形影不离。」',
-      unlocked: gameStore.isItemFound('carving') || archiveStore.isMemoryEverTriggered('m12')
+  const hasMemory = (id) => gameStore.triggeredMemories.includes(id) || archiveStore.isMemoryEverTriggered(id)
+  const hasItem = (id) => gameStore.isItemFound(id) || archiveStore.isMemoryEverTriggered(storyStore.getMemoryByItemId(id)?.id)
+  const hasHM = (id) => gameStore.isHiddenMemoryUnlocked(id) || archiveStore.isHiddenMemoryEverUnlocked(id)
+
+  const cafeUnlocked = hasItem('cup') || hasItem('notebook') || hasItem('ring') || hasMemory('m7') || hasMemory('m8') || hasMemory('m9')
+  const bookstoreUnlocked = hasItem('book') || hasItem('bookmark') || hasItem('glasses') || hasMemory('m13') || hasMemory('m14') || hasMemory('m15')
+  const streetUnlocked = hasItem('bracelet') || hasItem('flower') || hasItem('carving') || hasMemory('m10') || hasMemory('m11') || hasMemory('m12')
+  const parkUnlocked = hasItem('photo') || hasItem('icecream') || hasItem('balloon') || hasMemory('m4') || hasMemory('m5') || hasMemory('m6')
+  const lakeUnlocked = hasItem('bottle') || hasItem('necklace') || hasItem('promise_ring') || hasMemory('m16') || hasMemory('m17') || hasMemory('m18')
+  const stationUnlocked = hasItem('ticket') || hasItem('watch') || hasItem('letter') || hasMemory('m1') || hasMemory('m2') || hasMemory('m3')
+
+  const totalMemories = (() => {
+    const set = new Set([...gameStore.triggeredMemories, ...archiveStore.everTriggeredMemories])
+    return set.size
+  })()
+  const totalItems = (() => {
+    let count = 0
+    const allScenes = storyStore.getAllScenes()
+    for (const scene of allScenes) {
+      for (const item of scene.items) {
+        if (hasItem(item.id)) count++
+      }
     }
-  ]
+    return count
+  })()
+  const totalHM = (() => {
+    const set = new Set([...gameStore.unlockedHiddenMemories, ...archiveStore.everUnlockedHiddenMemories])
+    return set.size
+  })()
+  const herUnlocked = totalMemories > 0 || totalItems > 0
+
+  const rels = []
+
+  rels.push({
+    id: 'her',
+    name: '她',
+    icon: '👩',
+    relation: herUnlocked ? `恋人 · 共同回忆 ${Math.min(totalMemories + totalHM, 21)} 段` : '恋人',
+    color: '#ff6b9d',
+    angle: 0,
+    memory: hasMemory('m18')
+      ? '「我一直在等你开口。」'
+      : hasMemory('m9')
+        ? '「这枚戒指，我还留着。」'
+        : hasMemory('m1')
+          ? '「再见...保重。」'
+          : '「如果你开口挽留，我会留下来。」',
+    unlocked: herUnlocked,
+    stats: herUnlocked ? { '旧物': Math.min(totalItems, 18), '回忆': Math.min(totalMemories, 18), '隐藏': Math.min(totalHM, 3) } : null,
+    badge: hasHM('hm3') ? '✦ 星光见证' : hasMemory('m18') ? '💕 永不分离' : hasMemory('m9') ? '💍 未完待续' : null
+  })
+
+  rels.push({
+    id: 'station_master',
+    name: '火车站长',
+    icon: '🧔',
+    relation: stationUnlocked ? '离别见证者' : '素未谋面',
+    color: '#8b9dc3',
+    angle: 51,
+    memory: hasMemory('m3')
+      ? '「这封信，是她特意留给你的。」'
+      : hasMemory('m2')
+        ? '「这块表，见证了太多离别与重逢。」'
+        : hasMemory('m1')
+          ? '「那天的雪，下得真大啊。」'
+          : '「年轻人，要去哪里？」',
+    unlocked: stationUnlocked,
+    stats: stationUnlocked ? {
+      '站台': '火车站',
+      '物品': [hasItem('ticket') && '车票', hasItem('watch') && '旧手表', hasItem('letter') && '未拆的信'].filter(Boolean).join('、') || '无'
+    } : null
+  })
+
+  rels.push({
+    id: 'cafe_owner',
+    name: '咖啡馆老板',
+    icon: '👨‍🍳',
+    relation: cafeUnlocked ? '初遇的守护者' : '素未谋面',
+    color: '#d4a574',
+    angle: 102,
+    memory: hasHM('hm2')
+      ? '「这杯特调，只为你们而调。」'
+      : hasMemory('m9')
+        ? '「这枚戒指，我保存了很多年。」'
+        : hasMemory('m8')
+          ? '「她的笔记，写满了你的名字。」'
+          : hasMemory('m7')
+            ? '「靠窗的位置，一直为你们留着。」'
+            : '「欢迎光临，要点什么？」',
+    unlocked: cafeUnlocked,
+    stats: cafeUnlocked ? {
+      '角落': '街角咖啡馆',
+      '物品': [hasItem('cup') && '情侣杯', hasItem('notebook') && '笔记本', hasItem('ring') && '银戒指'].filter(Boolean).join('、') || '无'
+    } : null
+  })
+
+  rels.push({
+    id: 'neighbor',
+    name: '老街邻居',
+    icon: '👵',
+    relation: streetUnlocked ? '青梅竹马的见证者' : '素未谋面',
+    color: '#9b8b6a',
+    angle: 153,
+    memory: hasMemory('m12')
+      ? '「这木雕，是你们一起刻的吧？」'
+      : hasMemory('m11')
+        ? '「她走的那天，回头了好多次。」'
+        : hasMemory('m10')
+          ? '「你们两个，从小就形影不离。」'
+          : '「你是...老王家的小子？」',
+    unlocked: streetUnlocked,
+    stats: streetUnlocked ? {
+      '巷口': '老街',
+      '物品': [hasItem('flower') && '干花', hasItem('bracelet') && '编绳手链', hasItem('carving') && '木雕'].filter(Boolean).join('、') || '无'
+    } : null
+  })
+
+  rels.push({
+    id: 'old_tree',
+    name: '公园老树',
+    icon: '🌳',
+    relation: parkUnlocked ? '夏日回忆的载体' : '伫立的守候',
+    color: '#7cb342',
+    angle: 204,
+    memory: hasHM('hm1')
+      ? '✦ 树洞里藏着一个关于星光的秘密...'
+      : hasMemory('m6')
+        ? '「气球带着心愿飘向了远方。」'
+        : hasMemory('m5')
+          ? '「那支融化的冰淇淋，甜了整个夏天。」'
+          : hasMemory('m4')
+            ? '「老照片里，你们笑得真灿烂。」'
+            : '风吹树叶，沙沙作响...',
+    unlocked: parkUnlocked,
+    stats: parkUnlocked ? {
+      '树荫': '公园',
+      '物品': [hasItem('photo') && '老照片', hasItem('icecream') && '冰淇淋盒', hasItem('balloon') && '气球残片'].filter(Boolean).join('、') || '无'
+    } : null
+  })
+
+  rels.push({
+    id: 'bookstore_clerk',
+    name: '书店店员',
+    icon: '👩‍💼',
+    relation: bookstoreUnlocked ? '字里行间的观察者' : '素未谋面',
+    color: '#8b7355',
+    angle: 255,
+    memory: hasMemory('m15')
+      ? '「这副眼镜，是她遗落在这里的。」'
+      : hasMemory('m14')
+        ? '「她总把书签夹在同一页。」'
+        : hasMemory('m13')
+          ? '「她经常来，每次都找同一本书。」'
+          : '「欢迎光临，需要推荐吗？」',
+    unlocked: bookstoreUnlocked,
+    stats: bookstoreUnlocked ? {
+      '书架间': '旧书店',
+      '物品': [hasItem('book') && '诗集', hasItem('bookmark') && '书签', hasItem('glasses') && '眼镜'].filter(Boolean).join('、') || '无'
+    } : null
+  })
+
+  rels.push({
+    id: 'lake_witness',
+    name: '湖畔涟漪',
+    icon: '🌊',
+    relation: lakeUnlocked ? '约定的见证者' : '平静的湖面',
+    color: '#4dd0e1',
+    angle: 306,
+    memory: hasHM('hm3')
+      ? '✦ 星光下，那个关于一生的约定终于被听见...'
+      : hasMemory('m18')
+        ? '「我答应过你，会等你。」'
+        : hasMemory('m17')
+          ? '「这条项链，坠着我所有的勇气。」'
+          : hasMemory('m16')
+            ? '「漂流瓶里，装着我的思念。」'
+            : '湖面倒映着星光与云影...',
+    unlocked: lakeUnlocked,
+    stats: lakeUnlocked ? {
+      '水畔': '湖畔公园',
+      '物品': [hasItem('bottle') && '漂流瓶', hasItem('necklace') && '项链', hasItem('promise_ring') && '承诺戒指'].filter(Boolean).join('、') || '无'
+    } : null
+  })
+
   return rels
 })
 
 const displayedPages = computed(() => {
   const pages = []
-  
+
   const itemsPerPage = 4
   for (let i = 0; i < allItems.value.length; i += itemsPerPage) {
     pages.push({
@@ -378,7 +581,7 @@ const displayedPages = computed(() => {
       items: allItems.value.slice(i, i + itemsPerPage)
     })
   }
-  
+
   const memoriesPerPage = 2
   for (let i = 0; i < allMemories.value.length; i += memoriesPerPage) {
     pages.push({
@@ -386,12 +589,12 @@ const displayedPages = computed(() => {
       memories: allMemories.value.slice(i, i + memoriesPerPage)
     })
   }
-  
+
   pages.push({
     type: 'relationships',
     relationships: relationships.value
   })
-  
+
   return pages
 })
 
@@ -408,27 +611,6 @@ watch(showModal, (val) => {
 watch([selectedChapter, selectedScene], () => {
   currentPageIndex.value = 0
 })
-
-function getItemChapter(itemId) {
-  for (const chapter of storyStore.getAllChapters()) {
-    const item = storyStore.getItemById(itemId)
-    if (!item) continue
-    const itemScene = findSceneForItem(itemId)
-    if (itemScene && chapter.unlockedScenes.includes(itemScene.id)) {
-      return chapter
-    }
-  }
-  return null
-}
-
-function findSceneForItem(itemId) {
-  for (const scene of storyStore.getAllScenes()) {
-    if (scene.items.some(i => i.id === itemId)) {
-      return scene
-    }
-  }
-  return null
-}
 
 function getPageDate(page) {
   const now = new Date()
@@ -887,13 +1069,19 @@ function getEmotionColor(emotion) {
 
 .memory-footer {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   align-items: center;
 }
 
-.memory-year {
-  font-size: 0.75rem;
+.memory-year,
+.memory-location,
+.memory-chapter {
+  font-size: 0.72rem;
   color: #8b7355;
+  background: rgba(139, 115, 85, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .memory-read-hint {
@@ -901,6 +1089,7 @@ function getEmotionColor(emotion) {
   color: #d4a574;
   opacity: 0;
   transition: opacity 0.3s ease;
+  margin-left: auto;
 }
 
 .journal-memory-card.unlocked:hover .memory-read-hint {
@@ -914,7 +1103,7 @@ function getEmotionColor(emotion) {
 
 .relationship-map {
   position: relative;
-  height: 280px;
+  height: 340px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -930,23 +1119,23 @@ function getEmotionColor(emotion) {
 }
 
 .center-avatar {
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .center-name {
   margin: 0;
   color: #5d4e37;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .relationship-connections {
@@ -959,11 +1148,11 @@ function getEmotionColor(emotion) {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 42%;
-  transform: translate(calc(-50% + calc(cos(var(--rel-angle)) * 130px)), calc(-50% + calc(sin(var(--rel-angle)) * 100px)));
+  width: 45%;
+  transform: translate(calc(-50% + calc(cos(var(--rel-angle)) * 150px)), calc(-50% + calc(sin(var(--rel-angle)) * 130px)));
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 8px;
   opacity: 0.5;
   transition: opacity 0.3s ease;
 }
@@ -1028,6 +1217,61 @@ function getEmotionColor(emotion) {
   color: #6b5a3c;
   font-style: italic;
   line-height: 1.4;
+}
+
+.rel-section-hint {
+  margin: -10px 0 12px 0;
+  font-size: 0.75rem;
+  color: #a09380;
+  font-style: italic;
+  text-align: center;
+}
+
+.connection-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rel-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.25), rgba(255, 107, 157, 0.1));
+  color: #ff6b9d;
+  font-size: 0.65rem;
+  border-radius: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.rel-stats {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(139, 115, 85, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rel-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  gap: 8px;
+}
+
+.stat-key {
+  color: #9b8b6a;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.stat-val {
+  color: #6b5a3c;
+  text-align: right;
+  min-width: 0;
+  word-break: break-all;
 }
 
 .page-footer {
