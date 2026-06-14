@@ -270,6 +270,21 @@ export const useGameStore = defineStore('game', () => {
     archiveStore.recordEnding(ending)
     archiveToGlobal()
 
+    const endingLabel = ending?.isSpecial
+      ? `达成「${ending.title}」`
+      : `抵达结局：${ending?.title || '未知'}`
+    archiveStore.createBranchSave(
+      endingLabel,
+      {
+        currentSceneId: currentSceneId.value,
+        timeRemaining: timeRemaining.value,
+        foundItems: [...foundItems.value],
+        triggeredMemories: [...triggeredMemories.value],
+        craftedItems: [...craftedItems.value],
+        unlockedHiddenMemories: [...unlockedHiddenMemories.value]
+      }
+    )
+
     saveStore.clearSave()
 
     gameState.value = 'end'

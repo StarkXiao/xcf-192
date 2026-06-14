@@ -80,14 +80,18 @@
             <div v-if="branchSaves.length === 0" class="empty-state">
               <span class="empty-icon">🌿</span>
               <p class="empty-text">暂无分支存档</p>
-              <p class="empty-hint">合成道具时将自动创建分支存档</p>
+              <p class="empty-hint">合成道具或达成结局时将自动创建分支存档</p>
             </div>
-            <div v-for="branch in branchSaves" :key="branch.id" class="branch-card">
+            <div v-for="branch in branchSaves" :key="branch.id" class="branch-card" :class="{ 'ending-branch': isEndingBranch(branch.label) }">
               <div class="branch-info">
-                <span class="branch-icon">🌿</span>
+                <span class="branch-icon">{{ isEndingBranch(branch.label) ? '�' : '�' }}</span>
                 <div class="branch-text">
-                  <h4 class="branch-label">{{ branch.label }}</h4>
-                  <span class="branch-time">{{ formatTime(branch.timestamp) }}</span>
+                  <h4 class="branch-label" :class="{ 'ending-label': isEndingBranch(branch.label) }">
+                    {{ branch.label }}
+                  </h4>
+                  <span class="branch-time">
+                    {{ isEndingBranch(branch.label) ? '🏁 结局节点 · ' : '' }}{{ formatTime(branch.timestamp) }}
+                  </span>
                   <div class="branch-stats">
                     <span class="branch-stat">物品 {{ branch.gameState.foundItems?.length || 0 }}/{{ totalItems }}</span>
                     <span class="branch-stat">合成 {{ branch.gameState.craftedItems?.length || 0 }}/{{ totalCraftable }}</span>
@@ -96,8 +100,8 @@
                 </div>
               </div>
               <div class="branch-actions">
-                <button class="branch-btn load-btn" @click="loadBranch(branch.id)">
-                  🔄 从此继续
+                <button class="branch-btn load-btn" :class="{ 'ending-load-btn': isEndingBranch(branch.label) }" @click="loadBranch(branch.id)">
+                  {{ isEndingBranch(branch.label) ? '🔁 从该结局回看去探索' : '🔄 从此继续' }}
                 </button>
                 <button class="branch-btn del-btn" @click="deleteBranch(branch.id)">
                   🗑️
@@ -228,6 +232,11 @@ function loadBranch(branchId) {
 
 function deleteBranch(branchId) {
   archiveStore.deleteBranchSave(branchId)
+}
+
+function isEndingBranch(label) {
+  if (!label) return false
+  return label.startsWith('达成') || label.startsWith('抵达结局')
 }
 </script>
 
@@ -663,6 +672,33 @@ function deleteBranch(branchId) {
 
 .del-btn:hover {
   background: rgba(255, 100, 100, 0.2);
+}
+
+.branch-card.ending-branch {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.08), rgba(20, 20, 40, 0.6));
+  border-color: rgba(212, 165, 116, 0.3);
+  box-shadow: 0 2px 20px rgba(212, 165, 116, 0.08);
+}
+
+.branch-card.ending-branch:hover {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.12), rgba(20, 20, 40, 0.8));
+  border-color: rgba(212, 165, 116, 0.45);
+}
+
+.ending-label {
+  color: #d4a574 !important;
+  font-weight: 600 !important;
+}
+
+.ending-load-btn {
+  background: linear-gradient(135deg, #d4a574, #b8956a) !important;
+  color: #1a1a2e !important;
+  font-weight: 500;
+}
+
+.ending-load-btn:hover {
+  box-shadow: 0 2px 15px rgba(212, 165, 116, 0.45) !important;
+  transform: translateY(-1px);
 }
 
 .memory-review-overlay {
