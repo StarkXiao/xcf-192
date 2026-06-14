@@ -182,32 +182,65 @@ export const useStoryStore = defineStore('story', () => {
     return EFFICIENCY_LEVELS.POOR
   }
 
+  function getLevelIndex(level) {
+    const levelOrder = [EFFICIENCY_LEVELS.POOR, EFFICIENCY_LEVELS.NORMAL, EFFICIENCY_LEVELS.GOOD, EFFICIENCY_LEVELS.EXCELLENT, EFFICIENCY_LEVELS.PERFECT]
+    return levelOrder.indexOf(level)
+  }
+
+  function getKeyChoiceMatchThreshold(endingType) {
+    const thresholds = {
+      legendary: 1.0,
+      epic: 0.8,
+      special: 0.7,
+      perfect: 0.7,
+      good: 0.5,
+      normal: 0.3,
+      bad: 0.2,
+      despair: 0
+    }
+    return thresholds[endingType] ?? 0.5
+  }
+
   function checkEndingRequirements(ending, params) {
     const req = ending.requirements
     if (!req) return true
 
     if (req.moodMin !== undefined && params.moodValue < req.moodMin) return false
-    if (req.findEfficiency && req.findEfficiency !== params.findEfficiency) {
-      const levelOrder = [EFFICIENCY_LEVELS.POOR, EFFICIENCY_LEVELS.NORMAL, EFFICIENCY_LEVELS.GOOD, EFFICIENCY_LEVELS.EXCELLENT, EFFICIENCY_LEVELS.PERFECT]
-      const reqLevel = levelOrder.indexOf(req.findEfficiency)
-      const currentLevel = levelOrder.indexOf(params.findEfficiency)
+
+    if (req.findEfficiency) {
+      const reqLevel = getLevelIndex(req.findEfficiency)
+      const currentLevel = getLevelIndex(params.findEfficiency)
       if (currentLevel < reqLevel) return false
     }
-    if (req.memoryCompleteness && req.memoryCompleteness !== params.memoryCompleteness) {
-      const levelOrder = [EFFICIENCY_LEVELS.POOR, EFFICIENCY_LEVELS.NORMAL, EFFICIENCY_LEVELS.GOOD, EFFICIENCY_LEVELS.EXCELLENT, EFFICIENCY_LEVELS.PERFECT]
-      const reqLevel = levelOrder.indexOf(req.memoryCompleteness)
-      const currentLevel = levelOrder.indexOf(params.memoryCompleteness)
+
+    if (req.memoryCompleteness) {
+      const reqLevel = getLevelIndex(req.memoryCompleteness)
+      const currentLevel = getLevelIndex(params.memoryCompleteness)
       if (currentLevel < reqLevel) return false
     }
+
     if (req.keyChoices && req.keyChoices.length > 0) {
       const matchedCount = req.keyChoices.filter(kc => params.madeChoices.includes(kc)).length
-      if (matchedCount < Math.ceil(req.keyChoices.length * 0.5)) return false
+      const threshold = getKeyChoiceMatchThreshold(ending.type)
+      const required = Math.ceil(req.keyChoices.length * threshold)
+      if (matchedCount < required) return false
     }
+
     if (req.hiddenItems !== undefined && params.foundHiddenItemsCount < req.hiddenItems) return false
+
     if (req.craftedItems && req.craftedItems.length > 0) {
-      const hasAll = req.craftedItems.every(ci => params.craftedItems.includes(ci))
-      if (!hasAll) return false
+      if (ending.type === 'legendary') {
+        const hasAll = req.craftedItems.every(ci => params.craftedItems.includes(ci))
+        if (!hasAll) return false
+      } else if (ending.type === 'epic') {
+        const matchedCount = req.craftedItems.filter(ci => params.craftedItems.includes(ci)).length
+        if (matchedCount < Math.ceil(req.craftedItems.length * 0.6)) return false
+      } else {
+        const matchedCount = req.craftedItems.filter(ci => params.craftedItems.includes(ci)).length
+        if (matchedCount < 1 && req.craftedItems.length > 0) return false
+      }
     }
+
     return true
   }
 
@@ -215,14 +248,56 @@ export const useStoryStore = defineStore('story', () => {
     let score = ending.score || 0
     const req = ending.requirements
 
+    if (req?.findEfficiency) {
+      const reqLevel = getLevelIndex(req.findEfficiency)
+      const currentLevel = getLevelIndex(params.findEfficiency)
+      const diff = currentLevel - reqLevel
+      if (diff > 0) score += diff * 40
+    } else {
+      score += getLevelIndex(params.findEfficiency) * 20
+    }
+
+    if (req?.memoryCompleteness) {
+      const reqLevel = getLevelIndex(req.memoryCompleteness)
+      const currentLevel = getLevelIndex(params.memoryCompleteness)
+      const diff = currentLevel - reqLevel
+      if (diff > 0) score += diff * 40
+    } else {
+      score += getLevelIndex(params.memoryCompleteness) * 20
+    }
+
     if (req?.keyChoices) {
       const matchedCount = req.keyChoices.filter(kc => params.madeChoices.includes(kc)).length
-      score += matchedCount * 50
+      score += matchedCount * 80
+      const matchRate = matchedCount / req.keyChoices.length
+      if (matchRate >= 1) score += 150
+      else if (matchRate >= 0.8) score += 80
+      else if (matchRate >= 0.6) score += 40
+    }
+
+    if (req?.hiddenItems !== undefined) {
+      const diff = params.foundHiddenItemsCount - req.hiddenItems
+      if (diff > 0) score += diff * 60
+    } else {
+      score += params.foundHiddenItemsCount * 30
+    }
+
+    if (req?.craftedItems) {
+      const matchedCount = req.craftedItems.filter(ci => params.craftedItems.includes(ci)).length
+      score += matchedCount * 70
+      if (matchedCount === req.craftedItems.length && req.craftedItems.length > 0) score += 100
+    } else {
+      score += params.craftedItems.length * 25
+    }
+
+    if (req?.moodMin !== undefined) {
+      const diff = params.moodValue - req.moodMin
+      if (diff > 0) score += Math.min(diff, 30) * 3
     }
 
     if (params.endingWeights) {
       const weightBonus = Object.values(params.endingWeights).reduce((sum, v) => sum + v, 0)
-      score += weightBonus * 10
+      score += weightBonus * 15
     }
 
     return score
@@ -278,14 +353,25 @@ export const useStoryStore = defineStore('story', () => {
   }
 
   function getFallbackEnding(params) {
-    const percentage = params.foundCount / (params.totalItems || 1)
-    if (percentage >= 0.8 && params.moodValue >= 60) {
+    const findIdx = getLevelIndex(params.findEfficiency)
+    const memIdx = getLevelIndex(params.memoryCompleteness)
+    const choiceCount = params.madeChoices ? params.madeChoices.length : 0
+    const hiCount = params.foundHiddenItemsCount || 0
+    const mood = params.moodValue || 0
+
+    const score = findIdx * 25 + memIdx * 25 + choiceCount * 15 + hiCount * 15 + mood * 0.4
+
+    if (score >= 220 && mood >= 55) {
       return reunionEndings.find(e => e.id === 're_nostalgic_reunion') || reunionEndings[4]
-    } else if (percentage >= 0.5 && params.moodValue >= 35) {
+    } else if (score >= 170 && mood >= 40) {
+      return reunionEndings.find(e => e.id === 're_letting_go') || reunionEndings[5]
+    } else if (score >= 170) {
       return reunionEndings.find(e => e.id === 're_warm_encounter') || reunionEndings[6]
-    } else if (percentage >= 0.3 && params.moodValue >= 20) {
+    } else if (score >= 110 && mood >= 25) {
       return reunionEndings.find(e => e.id === 're_honest_start') || reunionEndings[8]
-    } else if (params.moodValue >= 10) {
+    } else if (score >= 110 || mood >= 15) {
+      return reunionEndings.find(e => e.id === 're_regretful_meeting') || reunionEndings[7]
+    } else if (mood >= 8) {
       return reunionEndings.find(e => e.id === 're_fog_missing') || reunionEndings[9]
     }
     return reunionEndings.find(e => e.id === 're_despair_lost') || reunionEndings[10]

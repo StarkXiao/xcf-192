@@ -598,12 +598,39 @@ export const useGameStore = defineStore('game', () => {
   function checkGameComplete() {
     const allItemsFound = foundCount.value >= totalItems.value
     const allCrafted = craftedCount.value >= totalCraftable.value
+    const itemProgress = totalItems.value > 0 ? foundCount.value / totalItems.value : 0
+    const isFinalChapterUnlocked = currentChapterId.value >= 5
+    const hasEnoughProgress = itemProgress >= 0.4 && currentChapterId.value >= 3
+
     if (allItemsFound && allCrafted) {
       if (!triggerFinalKeyChoiceIfReady()) {
         setTimeout(() => {
           endGame()
         }, 2000)
       }
+      return
+    }
+
+    if (allItemsFound) {
+      if (!triggerFinalKeyChoiceIfReady()) {
+        setTimeout(() => {
+          endGame()
+        }, 3000)
+      }
+      return
+    }
+
+    if (isFinalChapterUnlocked) {
+      if (currentSceneId.value === 'lake' && !isChoiceMadeFor('kc_final')) {
+        triggerFinalKeyChoiceIfReady()
+      }
+      return
+    }
+
+    if (hasEnoughProgress && itemProgress >= 0.6) {
+      setTimeout(() => {
+        endGame()
+      }, 5000)
     }
   }
 

@@ -909,12 +909,12 @@ export const reunionEndings = [
     subtitle: '✦ 传说级结局 · 完美重逢 ✦',
     score: 1000,
     requirements: {
-      findEfficiency: 'perfect',
-      memoryCompleteness: 'perfect',
+      findEfficiency: 'excellent',
+      memoryCompleteness: 'excellent',
       keyChoices: ['kc_leave_send', 'kc_ring_serious', 'kc_promise_keep', 'kc_final_run'],
-      hiddenItems: 4,
+      hiddenItems: 3,
       craftedItems: ['time_key', 'promise_ring'],
-      moodMin: 85
+      moodMin: 80
     },
     description: '当承诺之戒戴上她无名指的那一刻，时光钥匙散发出耀眼的光芒。你终于说出了那句迟到了五年的话——"我爱你，从未改变。"\n\n她泪流满面，却笑得像个少女："我知道。我一直都知道。"\n\n五年的迷雾在瞬间消散，火车站、老街、咖啡馆、公园、书店、湖畔——所有你走过的地方，都开满了紫色的薰衣草。你们紧紧相拥，时间在这一刻停下，定格成永恒。\n\n原来命运从不残忍，它只是想让你们更懂珍惜。\n\n——时光会证明一切，而真爱，永不褪色。',
     scene: {
@@ -931,12 +931,12 @@ export const reunionEndings = [
     subtitle: '✧ 史诗级结局 · 完整回忆 ✧',
     score: 850,
     requirements: {
-      findEfficiency: 'excellent',
+      findEfficiency: 'good',
       memoryCompleteness: 'excellent',
       keyChoices: ['kc_leave_keep', 'kc_ring_hope', 'kc_promise_renew'],
-      hiddenItems: 3,
+      hiddenItems: 2,
       craftedItems: ['memory_book', 'summer_locket'],
-      moodMin: 70
+      moodMin: 65
     },
     description: '四件合成之物在空中悬浮，散发出四种不同颜色的光芒，编织成一幅完整的画卷——从第一次约会的薰衣草，到盛夏的冰淇淋，到老树的誓言，再到湖畔的诺言。\n\n所有碎片终于拼成了完整的她，也拼成了完整的你。\n\n"你真的找回了所有的回忆..."她的眼眶泛红，"那么，这次换我来问你——你愿意，和我重新开始吗？"\n\n你没有说话，只是牵起了她的手。\n\n——有些故事，写好了开头，就一定会有结局。',
     scene: {
@@ -953,12 +953,12 @@ export const reunionEndings = [
     subtitle: '✦ 特殊结局 · 命运回响 ✦',
     score: 700,
     requirements: {
-      findEfficiency: 'good',
+      findEfficiency: 'normal',
       memoryCompleteness: 'good',
       keyChoices: ['kc_final_smile'],
-      hiddenItems: 2,
+      hiddenItems: 1,
       craftedItems: ['lake_message'],
-      moodMin: 55
+      moodMin: 50
     },
     description: '你奔跑在雾气弥漫的湖畔，那个身影越来越近。五年的思念、遗憾、等待，都化作最后百米的冲刺。\n\n"好久不见。"你微笑着说，声音有些颤抖。\n\n她也笑了，泪水从脸颊滑落："好久不见。我知道你会来的。"\n\n湖水荡漾，映出两个并肩的身影。这一次，谁也没有先放手。\n\n——有些约定，迟到五年，依然算数。',
     scene: {
@@ -976,11 +976,11 @@ export const reunionEndings = [
     score: 680,
     requirements: {
       findEfficiency: 'good',
-      memoryCompleteness: 'good',
+      memoryCompleteness: 'normal',
       keyChoices: ['kc_final_apologize'],
-      hiddenItems: 2,
+      hiddenItems: 1,
       craftedItems: ['time_key'],
-      moodMin: 60
+      moodMin: 55
     },
     description: '你深深鞠了一躬："对不起，我来晚了。五年了，让你一个人等了这么久。"\n\n她走过来，轻轻抬起你的头，用拇指拭去你眼角的泪："没关系，你来了就好。"\n\n"还有一句话，"你鼓起勇气，"五年前没说出口的——我喜欢你。从八年前的那个清晨开始，一直都是。"\n\n她踮起脚尖，在你额头上轻轻一吻："我也是。一直都是。"\n\n——有些话，虽然迟到，但从不会太晚。',
     scene: {
@@ -997,11 +997,11 @@ export const reunionEndings = [
     subtitle: '完美结局 · 岁月安好',
     score: 600,
     requirements: {
-      findEfficiency: 'good',
+      findEfficiency: 'normal',
       memoryCompleteness: 'excellent',
       keyChoices: ['kc_leave_keep'],
       hiddenItems: 1,
-      moodMin: 65
+      moodMin: 60
     },
     description: '雾气散去，阳光透过梧桐树叶洒在你们身上。她就站在你们第一次约会的街角，和八年前一模一样。\n\n"你还记得这里？"她问。\n\n"怎么可能忘记。"你笑着回答，从口袋里掏出那封珍藏了五年的信，"这个，我想亲手交给你。"\n\n她接过信，指尖轻轻摩挲着信封："我也有东西给你。"她递过来一封信，同样的泛黄，同样的珍藏了五年。\n\n阳光正好，微风不燥。你们并肩坐在街角的长椅上，一起读着对方五年来的心事。\n\n——有些时光，从未远去。',
     scene: {
@@ -1018,10 +1018,10 @@ export const reunionEndings = [
     subtitle: '良好结局 · 各自安好',
     score: 500,
     requirements: {
-      findEfficiency: 'normal',
-      memoryCompleteness: 'normal',
+      findEfficiency: 'good',
+      memoryCompleteness: 'poor',
       keyChoices: ['kc_leave_burn'],
-      moodMin: 40
+      moodMin: 35
     },
     description: '你看着最后一缕雾气散去，也看到了她。五年了，她还是那么美，但你心中却出奇地平静。\n\n"你来了。"她说。\n\n"嗯。"你点点头，"我来...是想好好说声再见。"\n\n她愣了一下，然后笑了，笑得很释然："好啊。那...再见。"\n\n"再见。"你也笑了。\n\n你们朝相反的方向走去，没有回头。但你知道，这一次，你们都真正放下了。\n\n你抬头看看天，阳光正好。\n\n——有些故事，不需要结局。有些人，不需要重逢。放下，也是一种圆满。',
     scene: {
@@ -1038,10 +1038,11 @@ export const reunionEndings = [
     subtitle: '良好结局 · 重新认识',
     score: 480,
     requirements: {
-      findEfficiency: 'normal',
+      findEfficiency: 'poor',
       memoryCompleteness: 'good',
       keyChoices: ['kc_final_watch'],
-      moodMin: 50
+      hiddenItems: 0,
+      moodMin: 45
     },
     description: '你站在原地，不敢上前。五年了，你害怕这只是雾气中的幻影。\n\n她转过头，看到了你，笑了："傻瓜，还要我走过来吗？"\n\n她一步步走向你，你的心跳越来越快。她在你面前停下，歪着头看你："怎么，不认识我了？"\n\n"认识，"你深吸一口气，"只是...五年了，我需要一点时间确认这不是梦。"\n\n她轻轻掐了一下你的胳膊："疼吗？"\n\n"疼。"\n\n"那就不是梦。"她笑了，"你好，重新认识一下。我叫...算了，你应该还记得。"\n\n你也笑了："当然记得。你好，好久不见。"\n\n——有时候，最浪漫的重逢，是像第一次遇见那样，重新认识彼此。',
     scene: {
@@ -1059,9 +1060,10 @@ export const reunionEndings = [
     score: 350,
     requirements: {
       findEfficiency: 'normal',
-      memoryCompleteness: 'normal',
+      memoryCompleteness: 'poor',
       keyChoices: ['kc_ring_regret', 'kc_promise_doubt'],
-      moodMin: 25
+      hiddenItems: 0,
+      moodMin: 20
     },
     description: '雾气散去了一些，你看到了她的轮廓。但她身边，好像还有另一个人。\n\n你停下了脚步。\n\n她也看到了你，愣了一下，然后走过来："好久不见。"\n\n"好久不见。"你努力挤出一个微笑，"这是...？"\n\n"一个朋友。"她简单介绍，没有多说。\n\n你们寒暄了几句，都是些无关紧要的话。五年来你在心里演练了无数次的重逢场景，没有一次是这样的。\n\n告别之后，你一个人走在老街。梧桐叶落在你肩上，你没有拍掉。\n\n——有些错过，就是一辈子。但至少，你看到她过得很好。',
     scene: {
@@ -1078,10 +1080,11 @@ export const reunionEndings = [
     subtitle: '普通结局 · 坦诚相见',
     score: 380,
     requirements: {
-      findEfficiency: 'normal',
-      memoryCompleteness: 'good',
+      findEfficiency: 'poor',
+      memoryCompleteness: 'normal',
       keyChoices: ['kc_promise_doubt', 'kc_final_watch'],
-      moodMin: 30
+      hiddenItems: 0,
+      moodMin: 25
     },
     description: '"五年了，我不确定我还记得你的喜好，不确定我们还能不能像以前那样，"你诚实地说，"但我想试一试。"\n\n她看着你，眼中有惊讶，也有欣慰："谢谢你的诚实。其实...我也不确定。五年可以改变很多事情。"\n\n"那...我们重新开始？不是回到过去，而是从现在开始，认识全新的彼此？"\n\n她伸出手："你好，很高兴认识你。"\n\n你握住她的手，这一次，没有颤抖："你好，我也是。"\n\n雾气正在慢慢散去，前方的路虽然不清晰，但你们终于并肩站在了一起。\n\n——诚实，是一切新开始的基石。',
     scene: {
