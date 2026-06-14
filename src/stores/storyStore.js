@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters } from '../data/storyData'
+import { ENDING_MOOD_THRESHOLDS } from './moodStore'
 
 export const useStoryStore = defineStore('story', () => {
   function getSceneById(sceneId) {
@@ -158,55 +159,77 @@ export const useStoryStore = defineStore('story', () => {
     return matched
   }
 
-  function getBestEnding(craftedIds, chapterId = 5) {
+  function getBestEnding(craftedIds, chapterId = 5, moodValue = 50) {
     const matched = checkSpecialEndings(craftedIds, chapterId)
     if (matched.length === 0) return null
+    
+    const moodFiltered = matched.filter(ending => {
+      const threshold = ENDING_MOOD_THRESHOLDS[ending.type]
+      return threshold === undefined || moodValue >= threshold
+    })
+    
+    if (moodFiltered.length === 0) return null
+    
     const priority = { legendary: 3, epic: 2, special: 1 }
-    return matched.sort((a, b) => priority[b.type] - priority[a.type])[0]
+    return moodFiltered.sort((a, b) => priority[b.type] - priority[a.type])[0]
   }
 
-  function getEndingData(foundCount, totalCount, timeUsed, craftedIds = [], chapterId = 1) {
-    const specialEnding = getBestEnding(craftedIds, chapterId)
+  function getEndingData(foundCount, totalCount, timeUsed, craftedIds = [], chapterId = 1, moodValue = 50) {
+    const specialEnding = getBestEnding(craftedIds, chapterId, moodValue)
     if (specialEnding) {
+      const moodBonus = moodValue >= ENDING_MOOD_THRESHOLDS[specialEnding.type] ? ' 心绪与回忆共鸣，让这份重逢更加真挚动人。' : ''
       return {
         type: specialEnding.type,
         title: specialEnding.title,
-        description: specialEnding.description,
+        description: specialEnding.description + moodBonus,
         image: specialEnding.image,
-        isSpecial: true
+        isSpecial: true,
+        moodValue
       }
     }
 
     const percentage = foundCount / totalCount
     const perfectTime = 180
     
-    if (percentage >= 1 && timeUsed <= perfectTime) {
+    if (percentage >= 1 && timeUsed <= perfectTime && moodValue >= ENDING_MOOD_THRESHOLDS.perfect) {
       return {
         type: 'perfect',
         title: '完美重逢',
-        description: '你找回了所有的回忆，在雾散之前，终于在熟悉的街角看见了那个等待已久的身影。五年的等待，此刻都化作了相逢的泪水。',
-        image: 'perfect'
+        description: '你找回了所有的回忆，在雾散之前，终于在熟悉的街角看见了那个等待已久的身影。五年的等待，此刻都化作了相逢的泪水。温暖的心绪让这一刻更加永恒。',
+        image: 'perfect',
+        moodValue
       }
-    } else if (percentage >= 0.8) {
+    } else if (percentage >= 0.8 && moodValue >= ENDING_MOOD_THRESHOLDS.good) {
       return {
         type: 'good',
         title: '温暖重逢',
-        description: '大部分的回忆都已找回，虽然有些碎片散落风中，但你知道，那个人一定还在某个地方等待着你。雾渐渐散了，前方的路清晰可见。',
-        image: 'good'
+        description: '大部分的回忆都已找回，虽然有些碎片散落风中，但你知道，那个人一定还在某个地方等待着你。雾渐渐散了，前方的路清晰可见。温暖的心绪指引着你前进的方向。',
+        image: 'good',
+        moodValue
       }
-    } else if (percentage >= 0.5) {
+    } else if (percentage >= 0.5 && moodValue >= ENDING_MOOD_THRESHOLDS.normal) {
       return {
         type: 'normal',
         title: '迷雾中的约定',
-        description: '你找到了一些珍贵的回忆，但更多的还散落在这座雾城中。也许是时候放下过去，重新开始了。但你知道，有些约定，永远不会忘记。',
-        image: 'normal'
+        description: '你找到了一些珍贵的回忆，但更多的还散落在这座雾城中。也许是时候放下过去，重新开始了。但你知道，有些约定，永远不会忘记。平静的心绪让你能够坦然面对。',
+        image: 'normal',
+        moodValue
       }
-    } else {
+    } else if (moodValue >= ENDING_MOOD_THRESHOLDS.bad) {
       return {
         type: 'bad',
         title: '雾中迷失',
-        description: '雾气越来越浓，你几乎看不清前方的路。那些珍贵的回忆，终究还是消散在了迷雾之中。也许，有些故事，注定没有结局...',
-        image: 'bad'
+        description: '雾气越来越浓，你几乎看不清前方的路。那些珍贵的回忆，终究还是消散在了迷雾之中。也许，有些故事，注定没有结局... 低落的心绪让一切都显得更加黯淡。',
+        image: 'bad',
+        moodValue
+      }
+    } else {
+      return {
+        type: 'despair',
+        title: '心之迷雾',
+        description: '不仅雾气笼罩了这座城市，你的心也被深深的绝望所笼罩。回忆散落一地，却再也无法拼凑。也许，只有先找回自己，才能找回那些失去的东西。',
+        image: 'despair',
+        moodValue
       }
     }
   }

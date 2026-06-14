@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useStoryStore } from './storyStore'
 import { useSaveStore } from './saveStore'
 import { useArchiveStore } from './archiveStore'
+import { useMoodStore } from './moodStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -30,6 +31,18 @@ export const useGameStore = defineStore('game', () => {
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
   const archiveStore = useArchiveStore()
+  const moodStore = useMoodStore()
+
+  const moodStateName = computed(() => moodStore.moodStateName)
+  const moodStateColor = computed(() => moodStore.moodStateColor)
+  const moodPercent = computed(() => moodStore.moodPercent)
+  const moodValue = computed(() => moodStore.moodValue)
+  const moodStateId = computed(() => moodStore.moodStateId)
+  const musicLayer = computed(() => moodStore.musicLayer)
+  const textTone = computed(() => moodStore.textTone)
+  const hintIntensity = computed(() => moodStore.hintIntensity)
+  const lastMoodChange = ref(null)
+  const showMoodChange = ref(false)
 
   const totalItems = computed(() => {
     return storyStore.getTotalItemCount()
@@ -65,7 +78,7 @@ export const useGameStore = defineStore('game', () => {
     return Math.round(((itemProgress * 0.6) + (craftProgress * 0.4)) * 100)
   })
 
-  const memoryPercent = computed(() => {
+  const memoryProgressPercent = computed(() => {
     return storyStore.getMemoryPercent(foundCount.value, totalItems.value)
   })
 
@@ -74,11 +87,11 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const nextChapter = computed(() => {
-    return storyStore.getNextChapter(memoryPercent.value)
+    return storyStore.getNextChapter(memoryProgressPercent.value)
   })
 
   const chapterProgress = computed(() => {
-    return storyStore.getChapterProgress(memoryPercent.value)
+    return storyStore.getChapterProgress(memoryProgressPercent.value)
   })
 
   const currentChapterAtmosphere = computed(() => {
@@ -91,10 +104,27 @@ export const useGameStore = defineStore('game', () => {
   })
 
   function checkChapterProgress() {
-    const calculatedChapter = storyStore.getCurrentChapter(memoryPercent.value)
+    const calculatedChapter = storyStore.getCurrentChapter(memoryProgressPercent.value)
     if (calculatedChapter && calculatedChapter.id > currentChapterId.value) {
       advanceChapter(calculatedChapter.id)
     }
+  }
+
+  function triggerMoodChange(emotion) {
+    const result = moodStore.modifyMoodByEmotion(emotion)
+    if (result) {
+      lastMoodChange.value = result
+      showMoodChange.value = true
+      setTimeout(() => {
+        showMoodChange.value = false
+      }, 2000)
+    }
+    return result
+  }
+
+  function clearMoodChange() {
+    showMoodChange.value = false
+    lastMoodChange.value = null
   }
 
   function advanceChapter(newChapterId) {
@@ -154,6 +184,9 @@ export const useGameStore = defineStore('game', () => {
       craftedItems.value = savedGame.craftedItems || []
       unlockedHiddenMemories.value = savedGame.unlockedHiddenMemories || []
       currentChapterId.value = savedGame.currentChapterId || 1
+      if (savedGame.moodData) {
+        moodStore.loadSaveData(savedGame.moodData)
+      }
     } else {
       resetGame()
     }
@@ -181,6 +214,11 @@ export const useGameStore = defineStore('game', () => {
     unlockedHiddenMemories.value = branchData.unlockedHiddenMemories || []
     currentChapterId.value = branchData.currentChapterId || 1
     isPaused.value = false
+    if (branchData.moodData) {
+      moodStore.loadSaveData(branchData.moodData)
+    } else {
+      moodStore.resetMood()
+    }
 
     saveStore.saveGame({
       currentSceneId: currentSceneId.value,
@@ -189,7 +227,8 @@ export const useGameStore = defineStore('game', () => {
       triggeredMemories: [...triggeredMemories.value],
       craftedItems: [...craftedItems.value],
       unlockedHiddenMemories: [...unlockedHiddenMemories.value],
-      currentChapterId: currentChapterId.value
+      currentChapterId: currentChapterId.value,
+      moodData: moodStore.getSaveData()
     })
 
     gameState.value = 'playing'
@@ -206,6 +245,7 @@ export const useGameStore = defineStore('game', () => {
     unlockedHiddenMemories.value = []
     currentChapterId.value = 1
     isPaused.value = false
+    moodStore.resetMood()
     saveStore.clearSave()
   }
 
@@ -245,6 +285,7 @@ export const useGameStore = defineStore('game', () => {
       const memory = storyStore.getMemoryByItemId(itemId)
       if (memory && !triggeredMemories.value.includes(memory.id)) {
         triggeredMemories.value.push(memory.id)
+        triggerMoodChange(memory.emotion)
         showMemory(memory)
       }
       archiveToGlobal()
@@ -295,6 +336,7 @@ export const useGameStore = defineStore('game', () => {
     const hiddenMemory = storyStore.getHiddenMemoryByCraftId(recipe.resultId)
     if (hiddenMemory && !unlockedHiddenMemories.value.includes(hiddenMemory.id)) {
       unlockedHiddenMemories.value.push(hiddenMemory.id)
+      triggerMoodChange(hiddenMemory.emotion)
       setTimeout(() => {
         craftResultMessage.value = null
         showMemory(hiddenMemory)
@@ -315,7 +357,8 @@ export const useGameStore = defineStore('game', () => {
         triggeredMemories: [...triggeredMemories.value],
         craftedItems: [...craftedItems.value],
         unlockedHiddenMemories: [...unlockedHiddenMemories.value],
-        currentChapterId: currentChapterId.value
+        currentChapterId: currentChapterId.value,
+        moodData: moodStore.getSaveData()
       }
     )
 
@@ -364,7 +407,8 @@ export const useGameStore = defineStore('game', () => {
       totalItems.value,
       timeUsed,
       [...craftedItems.value],
-      currentChapterId.value
+      currentChapterId.value,
+      moodStore.moodValue
     )
 
     archiveStore.recordEnding(ending)
@@ -382,7 +426,8 @@ export const useGameStore = defineStore('game', () => {
         triggeredMemories: [...triggeredMemories.value],
         craftedItems: [...craftedItems.value],
         unlockedHiddenMemories: [...unlockedHiddenMemories.value],
-        currentChapterId: currentChapterId.value
+        currentChapterId: currentChapterId.value,
+        moodData: moodStore.getSaveData()
       }
     )
 
@@ -399,7 +444,8 @@ export const useGameStore = defineStore('game', () => {
       triggeredMemories: [...triggeredMemories.value],
       craftedItems: [...craftedItems.value],
       unlockedHiddenMemories: [...unlockedHiddenMemories.value],
-      currentChapterId: currentChapterId.value
+      currentChapterId: currentChapterId.value,
+      moodData: moodStore.getSaveData()
     })
   }
 
@@ -460,6 +506,16 @@ export const useGameStore = defineStore('game', () => {
     currentNarrationChapter,
     showChapterUnlockHint,
     unlockHintChapter,
+    moodStateName,
+    moodStateColor,
+    moodPercent,
+    moodValue,
+    moodStateId,
+    musicLayer,
+    textTone,
+    hintIntensity,
+    lastMoodChange,
+    showMoodChange,
     totalItems,
     foundCount,
     craftedCount,
@@ -469,7 +525,7 @@ export const useGameStore = defineStore('game', () => {
     formattedTime,
     isTimeWarning,
     totalProgress,
-    memoryPercent,
+    memoryProgressPercent,
     currentChapter,
     nextChapter,
     chapterProgress,
@@ -503,6 +559,8 @@ export const useGameStore = defineStore('game', () => {
     closeChapterNarration,
     getAvailableScenesForChapter,
     isSceneAccessible,
-    getCurrentSceneDescription
+    getCurrentSceneDescription,
+    triggerMoodChange,
+    clearMoodChange
   }
 })

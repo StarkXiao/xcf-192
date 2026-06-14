@@ -55,6 +55,13 @@
           <span class="stat-label">用时</span>
           <span class="stat-value">{{ formattedTimeUsed }}</span>
         </div>
+        <div class="stat-row mood-stat-row">
+          <span class="stat-icon">💭</span>
+          <span class="stat-label">最终心绪</span>
+          <span class="stat-value" :style="{ color: getMoodColor(finalMoodValue) }">
+            {{ getMoodStateName(finalMoodValue) }} ({{ finalMoodValue }})
+          </span>
+        </div>
         <div class="stat-row total-progress-row">
           <span class="stat-icon">📊</span>
           <span class="stat-label">综合完成度</span>
@@ -248,10 +255,29 @@ const endingEmoji = computed(() => {
     perfect: '🌟',
     good: '🥰',
     normal: '💭',
-    bad: '🌫️'
+    bad: '🌫️',
+    despair: '💔'
   }
   return emojis[endingType.value] || '💭'
 })
+
+const finalMoodValue = computed(() => endingData.value?.moodValue ?? 50)
+
+function getMoodStateName(moodValue) {
+  if (moodValue <= 20) return '绝望'
+  if (moodValue <= 40) return '阴郁'
+  if (moodValue <= 60) return '平静'
+  if (moodValue <= 80) return '温暖'
+  return '希冀'
+}
+
+function getMoodColor(moodValue) {
+  if (moodValue <= 20) return '#3d2828'
+  if (moodValue <= 40) return '#4a4a5a'
+  if (moodValue <= 60) return '#5a6a7a'
+  if (moodValue <= 80) return '#c48a65'
+  return '#e8b87a'
+}
 
 const allMemories = computed(() => storyStore.getAllMemories())
 
@@ -363,6 +389,14 @@ function returnHome() {
   background: linear-gradient(180deg, #0a1a2e 0%, #1f3d4d 40%, #2a5a6b 100%);
 }
 
+.end-scene.despair {
+  background: linear-gradient(180deg, #0a0505 0%, #1a0a0a 40%, #2d1515 100%);
+}
+
+.end-scene.despair .fog-layer {
+  background: radial-gradient(ellipse at center, rgba(100, 50, 50, 0.15) 0%, transparent 70%);
+}
+
 .fog-layer {
   position: absolute;
   top: 0;
@@ -469,6 +503,13 @@ function returnHome() {
 
 .ending-title.bad {
   color: #707080;
+}
+
+.ending-title.despair {
+  background: linear-gradient(135deg, #6b4444, #8b3a3a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .ending-type-badge {
@@ -620,6 +661,14 @@ function returnHome() {
 
 .end-scene.special .stat-value.total-stat {
   color: #60a5fa;
+}
+
+.end-scene.despair .stat-value.total-stat {
+  color: #8b3a3a;
+}
+
+.mood-stat-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .crafted-section {

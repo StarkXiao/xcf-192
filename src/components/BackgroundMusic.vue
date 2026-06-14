@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 
 const gameStore = useGameStore()
@@ -17,11 +17,29 @@ const musicEnabled = ref(true)
 
 const musicSrc = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQcAQNHWpXYRAPv/+/sA'
 
+const musicLayer = computed(() => gameStore.musicLayer)
+
+function applyMusicLayer() {
+  if (!audioRef.value || !musicLayer.value) return
+  
+  const layer = musicLayer.value
+  const baseVolume = musicEnabled.value ? layer.volume : 0
+  
+  audioRef.value.volume = baseVolume
+  audioRef.value.playbackRate = layer.playbackRate
+  
+  if (layer.filter && layer.filter !== 'none') {
+    audioRef.value.style.filter = layer.filter
+  } else {
+    audioRef.value.style.filter = 'none'
+  }
+}
+
 watch(musicEnabled, (newVal) => {
   gameStore.musicEnabled = newVal
   if (audioRef.value) {
     if (newVal) {
-      audioRef.value.volume = 0.3
+      applyMusicLayer()
       audioRef.value.play().catch(() => {})
     } else {
       audioRef.value.pause()
@@ -29,10 +47,14 @@ watch(musicEnabled, (newVal) => {
   }
 })
 
+watch(musicLayer, () => {
+  applyMusicLayer()
+}, { deep: true })
+
 onMounted(() => {
   musicEnabled.value = gameStore.musicEnabled
   if (audioRef.value && musicEnabled.value) {
-    audioRef.value.volume = 0.3
+    applyMusicLayer()
     const playAudio = () => {
       audioRef.value.play().catch(() => {})
       document.removeEventListener('click', playAudio)

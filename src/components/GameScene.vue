@@ -58,7 +58,18 @@
     <Transition name="fade" mode="out-in">
       <div :key="currentSceneId" class="scene-content">
         <h2 class="scene-title text-shadow">{{ currentScene?.name }}</h2>
-        <p class="scene-description text-shadow">{{ currentSceneDescription }}</p>
+        <p class="scene-description text-shadow" :style="sceneDescriptionStyle">{{ toneModifiedDescription }}</p>
+        
+        <div class="mood-indicator" :style="{ borderColor: moodStateColor }">
+          <span class="mood-icon">{{ getMoodIcon(moodStateName) }}</span>
+          <div class="mood-info">
+            <span class="mood-label" :style="{ color: moodStateColor }">{{ moodStateName }}</span>
+            <div class="mood-progress-bar">
+              <div class="mood-progress-fill" :style="{ width: moodPercent + '%', background: moodStateColor }"></div>
+            </div>
+          </div>
+          <span class="mood-value">{{ moodValue }}</span>
+        </div>
         
         <div class="scene-items">
           <div
@@ -70,7 +81,10 @@
               left: item.position.x + '%',
               top: item.position.y + '%',
               width: item.size.width + '%',
-              height: item.size.height + '%'
+              height: item.size.height + '%',
+              '--hint-glow-opacity': hintIntensity.glowOpacity,
+              '--hint-scale': hintIntensity.hintScale,
+              '--pulse-duration': hintIntensity.pulseSpeed + 's'
             }"
             @click="handleItemClick(item)"
           >
@@ -127,11 +141,20 @@
             </div>
             <div class="stat-item">
               <span class="stat-label">回忆完成度</span>
-              <span class="stat-value">{{ memoryPercent }}%</span>
+              <span class="stat-value">{{ memoryProgressPercent }}%</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">章节进度</span>
               <span class="stat-value">{{ chapterProgress }}%</span>
+            </div>
+            <div class="stat-item mood-stat-item">
+              <span class="stat-label">
+                <span class="stat-mood-icon">{{ getMoodIcon(moodStateName) }}</span>
+                心绪状态
+              </span>
+              <span class="stat-value" :style="{ color: moodStateColor }">
+                {{ moodStateName }} ({{ moodValue }})
+              </span>
             </div>
             <div class="stat-item">
               <span class="stat-label">已找到物品</span>
@@ -180,6 +203,19 @@
       </div>
     </Transition>
 
+    <Transition name="mood-fade">
+      <div v-if="showMoodChange && lastMoodChange" class="mood-change-toast" :class="lastMoodChange.change > 0 ? 'mood-up' : 'mood-down'">
+        <span class="mood-change-icon">{{ lastMoodChange.change > 0 ? '📈' : '📉' }}</span>
+        <span class="mood-change-text">
+          {{ lastMoodChange.change > 0 ? '心绪上升' : '心绪下降' }}
+          <span class="mood-change-value">{{ lastMoodChange.change > 0 ? '+' : '' }}{{ lastMoodChange.change }}</span>
+        </span>
+        <span v-if="lastMoodChange.stateChanged" class="mood-state-change">
+          → {{ getMoodStateName(lastMoodChange.newState) }}
+        </span>
+      </div>
+    </Transition>
+
     <MemoryModal />
     <CraftingModal />
     <ChapterNarration />
@@ -213,13 +249,43 @@ const craftedItems = computed(() => gameStore.craftedItems)
 const formattedTime = computed(() => gameStore.formattedTime)
 const triggeredMemories = computed(() => gameStore.triggeredMemories)
 
-const memoryPercent = computed(() => gameStore.memoryPercent)
+const memoryProgressPercent = computed(() => gameStore.memoryProgressPercent)
 const currentChapter = computed(() => gameStore.currentChapter)
 const nextChapter = computed(() => gameStore.nextChapter)
 const chapterProgress = computed(() => gameStore.chapterProgress)
 const currentChapterAtmosphere = computed(() => gameStore.currentChapterAtmosphere)
 const isFinalChapter = computed(() => gameStore.isFinalChapter)
 const currentSceneDescription = computed(() => gameStore.getCurrentSceneDescription())
+
+const moodStateName = computed(() => gameStore.moodStateName)
+const moodStateColor = computed(() => gameStore.moodStateColor)
+const moodPercent = computed(() => gameStore.moodPercent)
+const moodValue = computed(() => gameStore.moodValue)
+const hintIntensity = computed(() => gameStore.hintIntensity)
+const showMoodChange = computed(() => gameStore.showMoodChange)
+const lastMoodChange = computed(() => gameStore.lastMoodChange)
+const textTone = computed(() => gameStore.textTone)
+
+const sceneDescriptionStyle = computed(() => {
+  const tone = textTone.value
+  const style = {}
+  if (tone.color) {
+    style.color = tone.color
+  }
+  if (tone.italic) {
+    style.fontStyle = 'italic'
+  }
+  return style
+})
+
+const toneModifiedDescription = computed(() => {
+  const tone = textTone.value
+  let desc = currentSceneDescription.value
+  if (tone.prefix) {
+    desc = tone.prefix + ' ' + desc
+  }
+  return desc
+})
 
 const unlockedHMCount = computed(() => gameStore.unlockedHiddenMemories.length)
 const totalHMCount = computed(() => storyStore.getAllHiddenMemories().length)
@@ -321,6 +387,28 @@ function getCraftedName(craftId) {
 function getCraftedRarityClass(craftId) {
   const item = storyStore.getCraftedItemById(craftId)
   return item ? `bar-rarity-${item.rarity}` : ''
+}
+
+function getMoodIcon(moodName) {
+  const icons = {
+    '绝望': '💔',
+    '阴郁': '🌧️',
+    '平静': '😌',
+    '温暖': '☀️',
+    '希冀': '✨'
+  }
+  return icons[moodName] || '💭'
+}
+
+function getMoodStateName(stateId) {
+  const names = {
+    despair: '绝望',
+    gloomy: '阴郁',
+    calm: '平静',
+    warm: '温暖',
+    hopeful: '希冀'
+  }
+  return names[stateId] || stateId
 }
 </script>
 
@@ -503,7 +591,21 @@ function getCraftedRarityClass(craftId) {
 .scene-item:not(.found):hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 200, 100, 0.6);
-  transform: scale(1.1);
+  transform: scale(calc(1.1 * var(--hint-scale, 1)));
+}
+
+.scene-item.item-glow {
+  box-shadow: 0 0 15px rgba(255, 200, 100, calc(0.4 * var(--hint-glow-opacity, 0.7)));
+  animation: itemGlow calc(var(--pulse-duration, 2s)) ease-in-out infinite;
+}
+
+@keyframes itemGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 200, 100, calc(0.3 * var(--hint-glow-opacity, 0.7)));
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 200, 100, calc(0.6 * var(--hint-glow-opacity, 0.7)));
+  }
 }
 
 .scene-item.found {
@@ -516,6 +618,8 @@ function getCraftedRarityClass(craftId) {
 .item-icon {
   font-size: clamp(1.8rem, 6vw, 2.5rem);
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+  transform: scale(var(--hint-scale, 1));
+  transition: transform 0.3s ease;
 }
 
 .item-hint {
@@ -532,7 +636,136 @@ function getCraftedRarityClass(craftId) {
   justify-content: center;
   font-size: 0.9rem;
   font-weight: bold;
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse var(--pulse-duration, 2s) ease-in-out infinite;
+  transform: scale(var(--hint-scale, 1));
+  opacity: var(--hint-glow-opacity, 0.7);
+}
+
+.mood-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+  border: 2px solid;
+  margin: 0 auto 1rem;
+  max-width: 300px;
+  transition: all 0.5s ease;
+}
+
+.mood-icon {
+  font-size: 1.5rem;
+  animation: moodFloat 3s ease-in-out infinite;
+}
+
+@keyframes moodFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.mood-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mood-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.1rem;
+}
+
+.mood-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mood-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease, background 0.5s ease;
+}
+
+.mood-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e8e8f0;
+  min-width: 35px;
+  text-align: right;
+}
+
+.mood-change-toast {
+  position: fixed;
+  top: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.8rem 1.5rem;
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  font-weight: 600;
+  animation: toastIn 0.3s ease;
+}
+
+.mood-change-toast.mood-up {
+  background: rgba(100, 200, 150, 0.9);
+  border: 1px solid rgba(100, 200, 150, 0.5);
+  color: white;
+}
+
+.mood-change-toast.mood-down {
+  background: rgba(200, 100, 100, 0.9);
+  border: 1px solid rgba(200, 100, 100, 0.5);
+  color: white;
+}
+
+.mood-change-icon {
+  font-size: 1.3rem;
+}
+
+.mood-change-text {
+  font-size: 0.95rem;
+}
+
+.mood-change-value {
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.mood-state-change {
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+.mood-fade-enter-active,
+.mood-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.mood-fade-enter-from,
+.mood-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+.stat-mood-icon {
+  margin-right: 4px;
+}
+
+.mood-stat-item {
+  border-top: 1px solid rgba(212, 165, 116, 0.2);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .scene-item.found .item-hint {

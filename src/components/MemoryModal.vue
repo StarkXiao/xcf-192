@@ -19,8 +19,8 @@
         
         <div class="memory-divider" :class="{ 'hidden-divider': isHidden }"></div>
         
-        <div class="memory-content" :class="{ 'hidden-content': isHidden }">
-          {{ memory?.content }}
+        <div class="memory-content" :class="{ 'hidden-content': isHidden }" :style="contentStyle">
+          {{ toneModifiedContent }}
         </div>
         
         <div class="memory-footer">
@@ -50,6 +50,8 @@ const storyStore = useStoryStore()
 
 const showModal = computed(() => gameStore.showMemoryModal)
 const memory = computed(() => gameStore.currentMemory)
+const textTone = computed(() => gameStore.textTone)
+const moodStateId = computed(() => gameStore.moodStateId)
 
 const isHidden = computed(() => memory.value?.isHidden === true)
 
@@ -83,7 +85,31 @@ const emotionEmoji = computed(() => {
 })
 
 const emotionClass = computed(() => {
-  return `emotion-${memory.value?.emotion || 'default'}`
+  return `emotion-${memory.value?.emotion || 'default'} mood-${moodStateId.value}`
+})
+
+const toneModifiedContent = computed(() => {
+  if (!memory.value) return ''
+  const tone = textTone.value
+  let content = memory.value.content
+  
+  if (tone.prefix) {
+    content = tone.prefix + ' ' + content
+  }
+  
+  return content
+})
+
+const contentStyle = computed(() => {
+  const tone = textTone.value
+  const style = {}
+  if (tone.color) {
+    style.color = tone.color
+  }
+  if (tone.italic) {
+    style.fontStyle = 'italic'
+  }
+  return style
 })
 
 function closeModal() {
@@ -186,6 +212,32 @@ function closeModal() {
 
 .memory-modal.emotion-happy {
   border-color: rgba(255, 220, 100, 0.3);
+}
+
+.memory-modal.mood-despair {
+  background: linear-gradient(145deg, rgba(40, 20, 20, 0.95), rgba(30, 15, 15, 0.98));
+  border-color: rgba(100, 50, 50, 0.4);
+}
+
+.memory-modal.mood-gloomy {
+  background: linear-gradient(145deg, rgba(35, 35, 50, 0.95), rgba(25, 25, 40, 0.98));
+  border-color: rgba(80, 80, 120, 0.3);
+}
+
+.memory-modal.mood-calm {
+  background: linear-gradient(145deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
+  border-color: rgba(100, 120, 150, 0.3);
+}
+
+.memory-modal.mood-warm {
+  background: linear-gradient(145deg, rgba(50, 35, 25, 0.95), rgba(40, 28, 20, 0.98));
+  border-color: rgba(200, 140, 100, 0.3);
+}
+
+.memory-modal.mood-hopeful {
+  background: linear-gradient(145deg, rgba(50, 40, 20, 0.95), rgba(40, 32, 16, 0.98));
+  border-color: rgba(230, 180, 120, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(230, 180, 120, 0.15);
 }
 
 .memory-header {
