@@ -2,7 +2,10 @@
   <div 
     class="game-scene" 
     :style="gameSceneStyle"
-    :class="{ 'final-chapter-active': isFinalChapter }"
+    :class="[
+      { 'final-chapter-active': isFinalChapter },
+      `time-${currentTimePeriod}`
+    ]"
   >
     <div 
       class="fog-overlay" 
@@ -13,10 +16,21 @@
       :style="{ opacity: adjustedFogIntensity * 0.6 }"
     ></div>
     <div 
-      v-if="currentChapterAtmosphere?.backgroundTint" 
+      v-if="combinedAtmosphere?.backgroundTint" 
       class="atmosphere-tint"
-      :style="{ background: currentChapterAtmosphere.backgroundTint }"
+      :style="{ background: combinedAtmosphere.backgroundTint }"
     ></div>
+    
+    <div v-if="isNight" class="stars-overlay">
+      <div v-for="i in 50" :key="i" class="star" :style="getStarStyle(i)"></div>
+    </div>
+    
+    <Transition name="time-change">
+      <div v-if="timePeriodChanged" class="time-period-toast">
+        <span class="time-icon">{{ currentPeriodConfig?.icon }}</span>
+        <span class="time-text">{{ currentPeriodConfig?.name }}来临</span>
+      </div>
+    </Transition>
     
     <div class="game-header">
       <div class="header-left">
@@ -27,6 +41,13 @@
             <div class="chapter-progress-mini">
               <div class="mini-progress-fill" :style="{ width: chapterProgress + '%' }"></div>
             </div>
+          </div>
+        </div>
+        <div class="time-indicator" :class="`time-${currentTimePeriod}`">
+          <span class="time-icon">{{ currentPeriodConfig?.icon }}</span>
+          <span class="time-display">{{ formattedGameTime }}</span>
+          <div class="time-progress-bar">
+            <div class="time-progress-fill" :style="{ width: timeProgress + '%' }"></div>
           </div>
         </div>
         <Timer />
@@ -73,7 +94,7 @@
         
         <div class="scene-items">
           <div
-            v-for="item in currentScene?.items"
+            v-for="item in visibleItemsForCurrentScene"
             :key="item.id"
             class="scene-item"
             :class="{ found: isItemFound(item.id), 'item-glow': !isItemFound(item.id) }"
@@ -90,6 +111,11 @@
           >
             <span class="item-icon">{{ item.icon }}</span>
             <span v-if="!isItemFound(item.id)" class="item-hint">?</span>
+          </div>
+          
+          <div v-if="visibleItemsForCurrentScene.length < (currentScene?.items?.length || 0)" class="time-hint">
+            <span class="time-hint-icon">💡</span>
+            <span class="time-hint-text">某些物品只在特定时间出现...</span>
           </div>
         </div>
       </div>
@@ -112,19 +138,22 @@
 
     <div class="scene-nav">
       <button
-        v-for="scene in availableScenesFiltered"
-        :key="scene.id"
-        class="nav-btn"
-        :class="{ 'scene-locked': !isSceneAccessible(scene.id) }"
-        @click="isSceneAccessible(scene.id) && changeScene(scene.id)"
-        :disabled="!isSceneAccessible(scene.id)"
-        :title="isSceneAccessible(scene.id) ? '' : '需要完成更多回忆解锁此区域'"
-      >
-        <span class="nav-arrow">
-          {{ isSceneAccessible(scene.id) ? '→' : '🔒' }}
-        </span>
-        <span class="nav-name">{{ scene.name }}</span>
-      </button>
+          v-for="scene in availableScenesFiltered"
+          :key="scene.id"
+          class="nav-btn"
+          :class="{ 
+            'scene-locked': !isSceneAccessible(scene.id),
+            'time-locked': isTimeLocked(scene.id)
+          }"
+          @click="isSceneAccessible(scene.id) && changeScene(scene.id)"
+          :disabled="!isSceneAccessible(scene.id)"
+          :title="getSceneLockTitle(scene.id)"
+        >
+          <span class="nav-arrow">
+            {{ isSceneAccessible(scene.id) ? '→' : (isTimeLocked(scene.id) ? '⏰' : '🔒') }}
+          </span>
+          <span class="nav-name">{{ scene.name }}</span>
+        </button>
     </div>
 
     <Transition name="fade">
@@ -179,6 +208,15 @@
             <div class="stat-item">
               <span class="stat-label">剩余时间</span>
               <span class="stat-value">{{ formattedTime }}</span>
+            </div>
+            <div class="stat-item time-stat-item">
+              <span class="stat-label">
+                <span class="stat-time-icon">{{ currentPeriodConfig?.icon }}</span>
+                当前时间
+              </span>
+              <span class="stat-value" :style="{ color: currentPeriodConfig?.ambientColor }">
+                {{ currentPeriodConfig?.name }} {{ formattedGameTime }}
+              </span>
             </div>
           </div>
           <div class="menu-buttons">
@@ -266,6 +304,16 @@ const showMoodChange = computed(() => gameStore.showMoodChange)
 const lastMoodChange = computed(() => gameStore.lastMoodChange)
 const textTone = computed(() => gameStore.textTone)
 
+const currentTimePeriod = computed(() => gameStore.currentTimePeriod)
+const currentPeriodConfig = computed(() => gameStore.currentPeriodConfig)
+const formattedGameTime = computed(() => gameStore.formattedGameTime)
+const isNight = computed(() => gameStore.isNight)
+const isDay = computed(() => gameStore.isDay)
+const timePeriodChanged = computed(() => gameStore.timePeriodChanged)
+const timeProgress = computed(() => gameStore.timeProgress)
+const combinedAtmosphere = computed(() => gameStore.combinedAtmosphere)
+const visibleItemsForCurrentScene = computed(() => gameStore.visibleItemsForCurrentScene)
+
 const sceneDescriptionStyle = computed(() => {
   const tone = textTone.value
   const style = {}
@@ -304,7 +352,7 @@ const chapterIcon = computed(() => {
 
 const adjustedFogIntensity = computed(() => {
   const baseFog = currentScene.value?.fogIntensity || 0.5
-  const multiplier = currentChapterAtmosphere.value?.fogMultiplier || 1
+  const multiplier = combinedAtmosphere.value?.fogMultiplier || 1
   return Math.max(0, Math.min(1, baseFog * multiplier))
 })
 
@@ -312,9 +360,9 @@ const gameSceneStyle = computed(() => {
   const style = {
     background: currentScene.value?.backgroundStyle
   }
-  if (currentChapterAtmosphere.value) {
-    if (currentChapterAtmosphere.value.brightness) {
-      style.filter = `brightness(${currentChapterAtmosphere.value.brightness}) saturate(${currentChapterAtmosphere.value.saturation || 1})`
+  if (combinedAtmosphere.value) {
+    if (combinedAtmosphere.value.brightness) {
+      style.filter = `brightness(${combinedAtmosphere.value.brightness}) saturate(${combinedAtmosphere.value.saturation || 1})`
     }
   }
   return style
@@ -410,6 +458,53 @@ function getMoodStateName(stateId) {
   }
   return names[stateId] || stateId
 }
+
+function isTimeLocked(sceneId) {
+  const chapterUnlocked = storyStore.isSceneUnlocked(sceneId, currentChapterId.value)
+  if (!chapterUnlocked) return false
+  
+  const scene = storyStore.getSceneById(sceneId)
+  if (!scene || !scene.accessiblePeriods) return false
+  
+  return !gameStore.isSceneAccessible(sceneId)
+}
+
+function getSceneLockTitle(sceneId) {
+  const chapterUnlocked = storyStore.isSceneUnlocked(sceneId, currentChapterId.value)
+  if (!chapterUnlocked) {
+    return '需要完成更多回忆解锁此区域'
+  }
+  
+  const scene = storyStore.getSceneById(sceneId)
+  if (scene && scene.accessiblePeriods) {
+    const periodNames = {
+      dawn: '黎明',
+      day: '白天',
+      dusk: '黄昏',
+      night: '夜晚'
+    }
+    const periods = scene.accessiblePeriods.map(p => periodNames[p]).join('、')
+    return `此区域仅在${periods}可进入`
+  }
+  
+  return ''
+}
+
+function getStarStyle(index) {
+  const x = Math.random() * 100
+  const y = Math.random() * 100
+  const size = Math.random() * 2 + 1
+  const delay = Math.random() * 3
+  const duration = Math.random() * 2 + 2
+  return {
+    left: `${x}%`,
+    top: `${y}%`,
+    width: `${size}px`,
+    height: `${size}px`,
+    animationDelay: `${delay}s`,
+    animationDuration: `${duration}s`
+  }
+}
 </script>
 
 <style scoped>
@@ -418,7 +513,180 @@ function getMoodStateName(stateId) {
   height: 100%;
   position: relative;
   overflow: hidden;
-  transition: background 0.8s ease;
+  transition: background 0.8s ease, filter 1s ease;
+}
+
+.game-scene.time-night {
+  transition: filter 2s ease;
+}
+
+.stars-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.time-period-toast {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: toastIn 0.5s ease;
+}
+
+.time-period-toast .time-icon {
+  font-size: 1.5rem;
+}
+
+.time-period-toast .time-text {
+  color: #e8e8f0;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.1rem;
+}
+
+.time-change-enter-active,
+.time-change-leave-active {
+  transition: all 0.5s ease;
+}
+
+.time-change-enter-from,
+.time-change-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.time-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 8px;
+  min-width: 100px;
+  transition: all 0.5s ease;
+}
+
+.time-indicator.time-dawn {
+  border-color: rgba(255, 180, 100, 0.3);
+  background: rgba(255, 180, 100, 0.1);
+}
+
+.time-indicator.time-day {
+  border-color: rgba(135, 206, 235, 0.3);
+  background: rgba(135, 206, 235, 0.1);
+}
+
+.time-indicator.time-dusk {
+  border-color: rgba(255, 140, 100, 0.3);
+  background: rgba(255, 140, 100, 0.1);
+}
+
+.time-indicator.time-night {
+  border-color: rgba(100, 100, 180, 0.3);
+  background: rgba(20, 20, 60, 0.2);
+}
+
+.time-indicator .time-icon {
+  font-size: 1.1rem;
+}
+
+.time-indicator .time-display {
+  color: #e8e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: monospace;
+  min-width: 45px;
+}
+
+.time-progress-bar {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.time-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffb464, #87ceeb, #ff8c64, #1a1a4a);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.time-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 200, 100, 0.3);
+  animation: hintFloat 2s ease-in-out infinite;
+}
+
+.time-hint-icon {
+  font-size: 0.9rem;
+}
+
+.time-hint-text {
+  color: #d4a574;
+  font-size: 0.75rem;
+}
+
+.nav-btn.time-locked {
+  background: rgba(100, 80, 120, 0.4);
+  border-color: rgba(180, 140, 200, 0.3);
+}
+
+.nav-btn.time-locked:hover {
+  background: rgba(100, 80, 120, 0.4);
+  border-color: rgba(180, 140, 200, 0.3);
+}
+
+.time-stat-item {
+  border-top: 1px solid rgba(135, 206, 235, 0.2);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.stat-time-icon {
+  margin-right: 4px;
 }
 
 .fog-overlay {

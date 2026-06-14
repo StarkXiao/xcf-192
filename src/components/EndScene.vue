@@ -62,6 +62,13 @@
             {{ getMoodStateName(finalMoodValue) }} ({{ finalMoodValue }})
           </span>
         </div>
+        <div class="stat-row time-stat-row">
+          <span class="stat-icon">⏰</span>
+          <span class="stat-label">游戏内时间</span>
+          <span class="stat-value">
+            {{ getFinalGameTime() }}
+          </span>
+        </div>
         <div class="stat-row total-progress-row">
           <span class="stat-icon">📊</span>
           <span class="stat-label">综合完成度</span>
@@ -180,10 +187,12 @@ import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { useStoryStore } from '../stores/storyStore'
 import { useArchiveStore } from '../stores/archiveStore'
+import { useTimeStore, GAME_START_HOUR, GAME_TOTAL_HOURS } from '../stores/timeStore'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
 const archiveStore = useArchiveStore()
+const timeStore = useTimeStore()
 
 const timeUsed = ref(300 - gameStore.timeRemaining)
 const foundCount = computed(() => gameStore.foundCount)
@@ -343,6 +352,18 @@ function getEmojiForEmotion(emotion) {
     determined: '💪'
   }
   return emotions[emotion] || '💭'
+}
+
+function getFinalGameTime() {
+  const finalHour = Math.min(timeStore.currentHour, GAME_START_HOUR + GAME_TOTAL_HOURS)
+  const periodNames = {
+    dawn: '黎明',
+    day: '白天',
+    dusk: '黄昏',
+    night: '夜晚'
+  }
+  const period = timeStore.currentTimePeriod
+  return `${periodNames[period]} ${finalHour}:00`
 }
 
 function openArchive() {

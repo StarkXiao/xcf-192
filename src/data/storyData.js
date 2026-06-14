@@ -6,6 +6,13 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
     fogIntensity: 0.7,
     connectedScenes: ['street', 'cafe'],
+    accessiblePeriods: ['dawn', 'day', 'dusk', 'night'],
+    timeDescriptions: {
+      dawn: '黎明的火车站笼罩在淡金色的光晕中，早班火车的鸣笛声划破寂静...',
+      day: '阳光透过雾气洒在站台上，人来人往，却没有那个熟悉的身影...',
+      dusk: '黄昏的火车站被染成橙红色，下班的人群匆匆走过...',
+      night: '夜晚的火车站灯火阑珊，只有几盏路灯照亮空荡荡的站台...'
+    },
     items: [
       {
         id: 'ticket',
@@ -13,7 +20,8 @@ export const scenes = [
         description: '一张泛黄的火车票，日期是五年前的今天。',
         position: { x: 15, y: 65 },
         size: { width: 12, height: 8 },
-        icon: '🎫'
+        icon: '🎫',
+        visiblePeriods: ['dawn', 'day', 'dusk', 'night']
       },
       {
         id: 'scarf',
@@ -21,7 +29,8 @@ export const scenes = [
         description: '她当年最喜欢的那条蓝色围巾，被遗落在了候车椅上。',
         position: { x: 60, y: 55 },
         size: { width: 10, height: 12 },
-        icon: '🧣'
+        icon: '🧣',
+        visiblePeriods: ['dawn', 'dusk', 'night']
       },
       {
         id: 'watch',
@@ -29,7 +38,8 @@ export const scenes = [
         description: '一块停在8点23分的怀表，那是火车开走的时间。',
         position: { x: 80, y: 70 },
         size: { width: 8, height: 10 },
-        icon: '⌚'
+        icon: '⌚',
+        visiblePeriods: ['day', 'dusk']
       }
     ]
   },
@@ -40,6 +50,13 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #2c3e50 0%, #34495e 50%, #4a6741 100%)',
     fogIntensity: 0.5,
     connectedScenes: ['station', 'park', 'bookstore'],
+    accessiblePeriods: ['dawn', 'day', 'dusk', 'night'],
+    timeDescriptions: {
+      dawn: '清晨的老街很安静，只有早点摊的炊烟袅袅升起...',
+      day: '白天的老街热闹非凡，店铺开门营业，人来人往...',
+      dusk: '黄昏的老街被夕阳染成金色，梧桐树影婆娑...',
+      night: '夜晚的老街灯火通明，小吃摊的香气弥漫在空气中...'
+    },
     items: [
       {
         id: 'photo',
@@ -47,7 +64,8 @@ export const scenes = [
         description: '一张被雨水打湿边缘的合照，照片上的你们笑得那么灿烂。',
         position: { x: 25, y: 60 },
         size: { width: 10, height: 12 },
-        icon: '🖼️'
+        icon: '🖼️',
+        visiblePeriods: ['day', 'dusk']
       },
       {
         id: 'icecream',
@@ -55,7 +73,8 @@ export const scenes = [
         description: '那家老字号冰淇淋店的勺子，你们曾分享过同一个甜筒。',
         position: { x: 70, y: 45 },
         size: { width: 8, height: 10 },
-        icon: '🍦'
+        icon: '🍦',
+        visiblePeriods: ['day']
       },
       {
         id: 'letter',
@@ -63,7 +82,8 @@ export const scenes = [
         description: '一封写满思念的信，却始终没有勇气寄出去。',
         position: { x: 45, y: 75 },
         size: { width: 10, height: 8 },
-        icon: '💌'
+        icon: '💌',
+        visiblePeriods: ['night']
       }
     ]
   },
@@ -74,6 +94,11 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #3d2914 0%, #5d4e37 50%, #8b7355 100%)',
     fogIntensity: 0.3,
     connectedScenes: ['station', 'bookstore'],
+    accessiblePeriods: ['day', 'dusk'],
+    timeDescriptions: {
+      day: '白天的咖啡馆阳光明媚，靠窗的位置洒满阳光...',
+      dusk: '黄昏的咖啡馆笼罩在温暖的灯光下，咖啡香气四溢...'
+    },
     items: [
       {
         id: 'cup',
@@ -81,7 +106,8 @@ export const scenes = [
         description: '杯口还留着她的口红印，仿佛她刚刚才离开。',
         position: { x: 30, y: 50 },
         size: { width: 10, height: 12 },
-        icon: '☕'
+        icon: '☕',
+        visiblePeriods: ['day', 'dusk']
       },
       {
         id: 'ring',
@@ -89,7 +115,8 @@ export const scenes = [
         description: '你当年用这个开玩笑说要向她求婚，她红着脸说等以后。',
         position: { x: 65, y: 65 },
         size: { width: 8, height: 8 },
-        icon: '💍'
+        icon: '💍',
+        visiblePeriods: ['dusk']
       },
       {
         id: 'notebook',
@@ -97,7 +124,8 @@ export const scenes = [
         description: '她落下的日记本，里面写满了关于你的心事。',
         position: { x: 80, y: 40 },
         size: { width: 12, height: 14 },
-        icon: '📔'
+        icon: '📔',
+        visiblePeriods: ['day']
       }
     ]
   },
@@ -108,6 +136,12 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #ff7e5f 0%, #feb47b 50%, #6a82fb 100%)',
     fogIntensity: 0.4,
     connectedScenes: ['street', 'lake'],
+    accessiblePeriods: ['dawn', 'day', 'dusk'],
+    timeDescriptions: {
+      dawn: '清晨的公园空气清新，晨练的人们开始出现...',
+      day: '白天的公园阳光明媚，孩子们在草地上奔跑...',
+      dusk: '黄昏的公园最美，夕阳把一切都染成了金黄色...'
+    },
     items: [
       {
         id: 'flower',
@@ -115,7 +149,8 @@ export const scenes = [
         description: '一朵被压平的薰衣草，是你们第一次约会时你送她的。',
         position: { x: 20, y: 55 },
         size: { width: 8, height: 12 },
-        icon: '🌸'
+        icon: '🌸',
+        visiblePeriods: ['dawn', 'day']
       },
       {
         id: 'balloon',
@@ -123,7 +158,8 @@ export const scenes = [
         description: '生日那天放飞的气球，绳子还在，气球却早已飞向远方。',
         position: { x: 55, y: 25 },
         size: { width: 6, height: 20 },
-        icon: '🎈'
+        icon: '🎈',
+        visiblePeriods: ['day', 'dusk']
       },
       {
         id: 'carving',
@@ -131,7 +167,8 @@ export const scenes = [
         description: '刻在老树上的两颗心，虽然有些模糊，但依然清晰可见。',
         position: { x: 75, y: 50 },
         size: { width: 12, height: 15 },
-        icon: '🪵'
+        icon: '🪵',
+        visiblePeriods: ['dusk']
       }
     ]
   },
@@ -142,6 +179,12 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #4a3728 0%, #6b4423 50%, #8b5a2b 100%)',
     fogIntensity: 0.2,
     connectedScenes: ['street', 'cafe'],
+    accessiblePeriods: ['day', 'dusk', 'night'],
+    timeDescriptions: {
+      day: '白天的书店安静祥和，阳光透过窗户洒在书架上...',
+      dusk: '黄昏的书店灯光温暖，最适合安静地阅读...',
+      night: '夜晚的书店静谧安详，只有翻书声和咖啡香...'
+    },
     items: [
       {
         id: 'book',
@@ -149,7 +192,8 @@ export const scenes = [
         description: '她最爱的那本书，扉页写着送给你的话。',
         position: { x: 35, y: 45 },
         size: { width: 10, height: 14 },
-        icon: '📖'
+        icon: '📖',
+        visiblePeriods: ['day', 'dusk', 'night']
       },
       {
         id: 'bookmark',
@@ -157,7 +201,8 @@ export const scenes = [
         description: '一枚枫叶做的书签，是那年秋天你们一起捡的。',
         position: { x: 60, y: 60 },
         size: { width: 8, height: 12 },
-        icon: '🍁'
+        icon: '🍁',
+        visiblePeriods: ['dusk', 'night']
       },
       {
         id: 'glasses',
@@ -165,7 +210,8 @@ export const scenes = [
         description: '她看书时戴的眼镜，镜片上似乎还有雾气。',
         position: { x: 80, y: 55 },
         size: { width: 10, height: 8 },
-        icon: '👓'
+        icon: '👓',
+        visiblePeriods: ['night']
       }
     ]
   },
@@ -176,6 +222,11 @@ export const scenes = [
     backgroundStyle: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1f4068 70%, #206a5d 100%)',
     fogIntensity: 0.8,
     connectedScenes: ['park'],
+    accessiblePeriods: ['dusk', 'night'],
+    timeDescriptions: {
+      dusk: '黄昏的湖畔波光粼粼，夕阳在湖面洒下金色...',
+      night: '夜晚的湖畔雾气弥漫，月光倒映在水中...'
+    },
     items: [
       {
         id: 'bottle',
@@ -183,7 +234,8 @@ export const scenes = [
         description: '你们扔进湖里的漂流瓶，不知为何又回到了岸边。',
         position: { x: 25, y: 70 },
         size: { width: 10, height: 14 },
-        icon: '🍾'
+        icon: '🍾',
+        visiblePeriods: ['dusk', 'night']
       },
       {
         id: 'necklace',
@@ -191,7 +243,8 @@ export const scenes = [
         description: '你在海边为她捡贝壳做的项链，她说要永远戴着。',
         position: { x: 55, y: 50 },
         size: { width: 10, height: 10 },
-        icon: '📿'
+        icon: '📿',
+        visiblePeriods: ['dusk']
       },
       {
         id: 'promise',
@@ -199,7 +252,8 @@ export const scenes = [
         description: '那颗你说代表永恒的小石子，静静地躺在湖边。',
         position: { x: 75, y: 75 },
         size: { width: 8, height: 8 },
-        icon: '🪨'
+        icon: '🪨',
+        visiblePeriods: ['night']
       }
     ]
   }
@@ -212,7 +266,19 @@ export const memories = [
     title: '离别的站台',
     content: '"我会等你的。"她的声音带着哽咽，火车的轰鸣声掩盖了她最后说的那句话。你紧紧握着车票，看着她的身影越来越小，直到消失在雾气中。五年后再回到这里，那张泛黄的车票还在，只是等待的人，是否还在原地？',
     emotion: 'sad',
-    year: '五年前'
+    year: '五年前',
+    timeVariants: {
+      dawn: {
+        title: '黎明的离别',
+        content: '黎明的站台上，你握着这张车票。五年前的那个清晨，雾气比现在更浓。"我会等你的。"她的声音带着哽咽，火车的轰鸣声掩盖了她最后说的那句话。晨光中，你仿佛又看到了她挥手的身影...',
+        emotion: 'pensive'
+      },
+      night: {
+        title: '深夜的车票',
+        content: '深夜的火车站格外寂静。你握着这张泛黄的车票，五年前的那个夜晚历历在目。火车开走后，你一个人在站台上站了很久。如果当时你追上去，结局会不会不一样？',
+        emotion: 'regret'
+      }
+    }
   },
   {
     id: 'm2',
@@ -220,7 +286,14 @@ export const memories = [
     title: '温暖的冬天',
     content: '那年冬天特别冷，她把自己的蓝色围巾围在你脖子上。"这样你就不会冷了。"她笑着说，鼻尖冻得通红。围巾上还留着她的味道，你想把它摘下来还给她，却发现她已经跑远了。现在，这条围巾还带着淡淡的薰衣草香。',
     emotion: 'warm',
-    year: '六年前'
+    year: '六年前',
+    timeVariants: {
+      night: {
+        title: '寒夜的温暖',
+        content: '夜晚的凉意让你想起了那个冬天。她把蓝色围巾围在你脖子上，"这样你就不会冷了。"围巾上还留着她的温度和薰衣草香。在这个孤独的夜晚，这条围巾是你唯一的慰藉。',
+        emotion: 'melancholy'
+      }
+    }
   },
   {
     id: 'm3',
@@ -228,7 +301,14 @@ export const memories = [
     title: '停下的时间',
     content: '8点23分，火车准点开出。你看着她发来的最后一条短信："时间会证明一切。"然后，这块怀表就再也没有走过。也许时间真的能证明什么，但五年过去了，你依然不懂她这句话的意思。',
     emotion: 'pensive',
-    year: '五年前'
+    year: '五年前',
+    timeVariants: {
+      day: {
+        title: '日光下的怀表',
+        content: '阳光照在怀表上，指针停在8点23分。那是火车开走的时间，也是她离开的时间。"时间会证明一切。"她的短信还在，可你始终不懂这句话的意思。也许有些答案，需要用一生去寻找。',
+        emotion: 'pensive'
+      }
+    }
   },
   {
     id: 'm4',
@@ -236,7 +316,14 @@ export const memories = [
     title: '盛夏的笑容',
     content: '照片是在一个夏天拍的，你们在梧桐树下笑得没心没肺。"我们要永远这样开心。"她说着，把头靠在你肩上。阳光穿过树叶的缝隙，在她脸上投下斑驳的光影。你以为那个夏天会是永远，却没想到那是你们最后一次一起过夏天。',
     emotion: 'happy',
-    year: '七年前'
+    year: '七年前',
+    timeVariants: {
+      dusk: {
+        title: '黄昏的合照',
+        content: '黄昏的阳光洒在照片上，把你们的笑容染成了金色。"我们要永远这样开心。"七年前的那个盛夏，她靠在你肩上说。梧桐树下的誓言，现在只剩这张泛黄的照片。',
+        emotion: 'bittersweet'
+      }
+    }
   },
   {
     id: 'm5',
@@ -244,7 +331,14 @@ export const memories = [
     title: '甜蜜的分享',
     content: '她总说一个冰淇淋吃不完，要和你分着吃。"这样就有双份的甜蜜了。"她用勺子挖了一大勺递给你，眼睛弯成了月牙。你故意吃得很慢，就是想和她多待一会儿。现在再路过这家店，你还是会习惯性地点两份。',
     emotion: 'sweet',
-    year: '六年前'
+    year: '六年前',
+    timeVariants: {
+      day: {
+        title: '正午的甜蜜',
+        content: '正午的阳光让人想起那年夏天。她总说一个冰淇淋吃不完，要和你分着吃。"这样就有双份的甜蜜了。"她笑着把勺子递过来。现在冰淇淋店还在，只是再也没有人陪你分享了。',
+        emotion: 'sweet'
+      }
+    }
   },
   {
     id: 'm6',
@@ -252,7 +346,14 @@ export const memories = [
     title: '未说出口的话',
     content: '这封信你写了又改，改了又写，最后还是没有寄出去。"亲爱的，我想告诉你..."每次写到这里就写不下去了。有些话，总是在面对她的时候说不出口。现在再看这些文字，字迹已经有些模糊，不知道是被泪水还是雨水打湿的。',
     emotion: 'sad',
-    year: '五年前'
+    year: '五年前',
+    timeVariants: {
+      night: {
+        title: '深夜的信',
+        content: '深夜里，你再次展开这封信。"亲爱的，我想告诉你..."五年了，你还是没有勇气寄出它。街灯的光透过窗户，照在模糊的字迹上——那些被泪水打湿的痕迹，在夜色中格外清晰。',
+        emotion: 'sad'
+      }
+    }
   },
   {
     id: 'm7',
@@ -260,7 +361,19 @@ export const memories = [
     title: '第一次约会',
     content: '你紧张得手心都是汗，她却很自然地坐在了你对面。"一杯拿铁，谢谢。"她对服务员说，然后转过头对你微笑。那是你们第一次单独见面，你却感觉已经认识她很久很久了。杯口的口红印，是她留下的第一个痕迹。',
     emotion: 'nervous',
-    year: '八年前'
+    year: '八年前',
+    timeVariants: {
+      day: {
+        title: '阳光下的相遇',
+        content: '白天的咖啡馆，阳光透过窗户洒进来。八年前的那个午后，她就坐在你对面。"一杯拿铁，谢谢。"她的声音很好听。杯口的口红印，是那个下午最美好的印记。',
+        emotion: 'warm'
+      },
+      dusk: {
+        title: '黄昏的咖啡',
+        content: '黄昏的咖啡馆格外浪漫。你想起八年前第一次约她出来的场景，紧张得手心都是汗。她却很自然地坐在了你对面，微笑着说："我等你很久了。"',
+        emotion: 'romantic'
+      }
+    }
   },
   {
     id: 'm8',
@@ -268,7 +381,14 @@ export const memories = [
     title: '玩笑的承诺',
     content: '你拿着易拉罐拉环单膝跪地，"嫁给我吧！"她笑着拍你，"谁要嫁给你啊，想得美。"嘴上这么说，脸却红了。"等以后吧，等你真的准备好的时候。"她接过拉环，小心翼翼地收进了包里。你一直记得这句话，只是那个"以后"，好像永远都不会来。',
     emotion: 'bittersweet',
-    year: '七年前'
+    year: '七年前',
+    timeVariants: {
+      dusk: {
+        title: '黄昏的承诺',
+        content: '黄昏的光线最适合说情话。七年前的这个时刻，你拿着易拉罐拉环单膝跪地："嫁给我吧！"她脸红了，"等以后吧，等你真的准备好的时候。"你一直在准备，却再也没有机会说出口。',
+        emotion: 'regret'
+      }
+    }
   },
   {
     id: 'm9',
@@ -276,7 +396,14 @@ export const memories = [
     title: '她的心事',
     content: '她的日记本里写满了你的名字。"今天他又迟到了，我假装生气，其实心里很开心。""他说我笑起来很好看，我开心了一整天。""他说他要走了，我不知道该怎么办。"翻到最后一页，只有一句话："如果我开口挽留，你会留下吗？"',
     emotion: 'shocking',
-    year: '五年前'
+    year: '五年前',
+    timeVariants: {
+      day: {
+        title: '午后的日记',
+        content: '午后的阳光照在日记本上，她的字迹清晰可见。"今天他又迟到了，我假装生气，其实心里很开心。""他说他要走了，我不知道该怎么办。"翻到最后一页，你的心揪紧了——"如果我开口挽留，你会留下吗？"',
+        emotion: 'shocking'
+      }
+    }
   },
   {
     id: 'm10',
@@ -284,7 +411,14 @@ export const memories = [
     title: '紫色的约定',
     content: '薰衣草的花语是等待爱情。你拿着这朵花紧张地站在公园门口，她出现的时候，你把花递过去，什么都没说。她接过花，闻了闻，"我知道。"她说。你不知道她知道什么，但是从那天起，你们就在一起了。',
     emotion: 'romantic',
-    year: '八年前'
+    year: '八年前',
+    timeVariants: {
+      dawn: {
+        title: '黎明的薰衣草',
+        content: '黎明的薄雾中，你仿佛又看到了八年前的那个清晨。你紧张地握着薰衣草，站在公园门口等她。她出现的时候，你把花递过去。她接过花，闻了闻，"我知道。"从那天起，你们的故事开始了。',
+        emotion: 'romantic'
+      }
+    }
   },
   {
     id: 'm11',
@@ -292,7 +426,19 @@ export const memories = [
     title: '飘走的愿望',
     content: '生日那天，你们一起放飞气球。"许个愿吧。"她说。你闭上眼睛许愿：希望每年的生日都能和她一起过。睁开眼的时候，气球已经飞远了。"你许了什么愿？"她好奇地问。"说出来就不灵了。"你笑着说。现在想想，也许说出来，愿望就不会跟着气球一起飘走了。',
     emotion: 'regret',
-    year: '六年前'
+    year: '六年前',
+    timeVariants: {
+      day: {
+        title: '阳光下的气球',
+        content: '阳光明媚的下午，你们一起放飞气球。"许个愿吧。"她说。你闭上眼睛，许愿每年的生日都能和她一起过。现在气球早已飘远，愿望也随之消散。也许当时说出来，结局会不一样。',
+        emotion: 'regret'
+      },
+      dusk: {
+        title: '黄昏的愿望',
+        content: '黄昏的天空格外美丽，六年前的生日就是这样的天气。你们一起放飞气球，她问你许了什么愿。"说出来就不灵了。"你笑着回答。现在你多希望当时能告诉她——"我的愿望，就是和你永远在一起。"',
+        emotion: 'melancholy'
+      }
+    }
   },
   {
     id: 'm12',
@@ -300,7 +446,14 @@ export const memories = [
     title: '永恒的印记',
     content: '你们在老树上刻下两颗心，"这样我们的爱情就永远不会消失了。"她说。你笑着说："树会长大的。""那我们的爱情也会长大。"她认真地说。现在再看这两颗心，确实长大了一些，只是刻下它们的人，却不在身边了。',
     emotion: 'melancholy',
-    year: '七年前'
+    year: '七年前',
+    timeVariants: {
+      dusk: {
+        title: '黄昏的木刻',
+        content: '黄昏的阳光把老树的影子拉得很长。七年前，你们在这里刻下两颗心。"树会长大的。"你说。"那我们的爱情也会长大。"她认真地回答。现在树长大了，心也长大了，只是刻下它们的人，却不在了。',
+        emotion: 'melancholy'
+      }
+    }
   },
   {
     id: 'm13',
@@ -308,7 +461,19 @@ export const memories = [
     title: '共同的秘密',
     content: '《小王子》是她最爱的书。"你看，小王子和狐狸是最好的朋友。"她指着书页给你看，"你就是我的狐狸。""那你是我的玫瑰花吗？"你问。她脸红了，"才不是。"翻开扉页，是她的字迹："送给我的狐狸，愿你永远记得我。 - 你的玫瑰花"',
     emotion: 'touched',
-    year: '七年前'
+    year: '七年前',
+    timeVariants: {
+      day: {
+        title: '午后的小王子',
+        content: '午后的阳光穿过书店的窗户，照在《小王子》的封面上。"你就是我的狐狸。"七年前，她指着书页对你说。翻开扉页，她的字迹依然清晰："送给我的狐狸，愿你永远记得我。 - 你的玫瑰花"',
+        emotion: 'touched'
+      },
+      night: {
+        title: '深夜的阅读',
+        content: '深夜里，你再次翻开《小王子》。"只有用心才能看得清楚，本质的东西眼睛是看不见的。"她曾经念给你听。泪水模糊了字迹，你终于明白——你一直都是她的小王子，只是你从来没有真正看见她的爱。',
+        emotion: 'sad'
+      }
+    }
   },
   {
     id: 'm14',
@@ -316,7 +481,19 @@ export const memories = [
     title: '秋天的回忆',
     content: '那年秋天的枫叶特别红，你们捡了满满一袋子。她用最红的那片做了书签，"这样你每次翻书都会想起我。"你说不会忘记她的，她只是笑着摇头。"人是会变的。"她说。你当时不懂她为什么这么说，现在终于懂了。',
     emotion: 'sad',
-    year: '六年前'
+    year: '六年前',
+    timeVariants: {
+      dusk: {
+        title: '黄昏的枫叶',
+        content: '黄昏的天空像枫叶一样红。六年前的秋天，你们捡了满满一袋子枫叶。她用最红的那片做了书签，"这样你每次翻书都会想起我。"你说不会忘记她，她却摇头说："人是会变的。"现在你终于懂了她的意思。',
+        emotion: 'sad'
+      },
+      night: {
+        title: '深夜的书签',
+        content: '深夜里，你摩挲着这片枫叶书签。六年前的秋天，她把它送给你，"这样你每次翻书都会想起我。"你说不会忘记她，她却只是摇头。窗外的秋风呼啸，你终于明白——她早就知道会有这么一天。',
+        emotion: 'melancholy'
+      }
+    }
   },
   {
     id: 'm15',
@@ -324,7 +501,14 @@ export const memories = [
     title: '专注的模样',
     content: '她看书的时候会戴眼镜，眉头微蹙，很认真的样子。你就坐在对面，假装看书，其实一直在看她。"你看我干嘛？"她突然抬头问。"你好看。"你实话实说。她脸一红，低下头继续看书，嘴角却微微上扬。',
     emotion: 'warm',
-    year: '八年前'
+    year: '八年前',
+    timeVariants: {
+      night: {
+        title: '深夜的眼镜',
+        content: '深夜的书店很安静，只有翻书的声音。你想起八年前的那个夜晚，她就坐在你对面看书，戴着这副眼镜。"你看我干嘛？"她突然抬头。"你好看。"你实话实说。她的脸红了，在灯光下格外动人。',
+        emotion: 'warm'
+      }
+    }
   },
   {
     id: 'm16',
@@ -332,7 +516,19 @@ export const memories = [
     title: '时间胶囊',
     content: '"我们把愿望写在纸条上，放进瓶子里，扔进湖里。十年后再回来找。"她兴奋地说。你写的是：希望十年后我们还在一起。现在瓶子回来了，可是她呢？纸条已经被水浸得模糊不清，但你依然记得自己写的每一个字。',
     emotion: 'sad',
-    year: '五年前'
+    year: '五年前',
+    timeVariants: {
+      dusk: {
+        title: '黄昏的漂流瓶',
+        content: '黄昏的湖面波光粼粼。五年前的这个时刻，你们把愿望写在纸条上，放进漂流瓶里。你写的是：希望十年后我们还在一起。现在瓶子回来了，可是她在哪里？',
+        emotion: 'sad'
+      },
+      night: {
+        title: '夜晚的回信',
+        content: '夜晚的湖水倒映着月光。你打开漂流瓶，纸条已经被水浸得模糊。但你依然记得自己写的每一个字——"希望十年后我们还在一起。"五年了，这个愿望还能实现吗？',
+        emotion: 'pensive'
+      }
+    }
   },
   {
     id: 'm17',
@@ -340,7 +536,14 @@ export const memories = [
     title: '永恒的贝壳',
     content: '你花了一个下午才找到这颗完美的贝壳，小心翼翼地做成项链。"送给你。"你把项链戴在她脖子上，"这代表永恒。"她摸了摸贝壳，"永恒有多久？""比永远多一天。"你说。她笑了，眼中闪着光。现在，项链还在，只是戴项链的人，已经不在身边了。',
     emotion: 'melancholy',
-    year: '七年前'
+    year: '七年前',
+    timeVariants: {
+      dusk: {
+        title: '黄昏的项链',
+        content: '黄昏的阳光照在贝壳项链上，折射出七彩的光。七年前的海边，你把它戴在她脖子上。"这代表永恒。""永恒有多久？""比永远多一天。"她笑了，眼中闪着光。现在项链还在，只是戴项链的人不在了。',
+        emotion: 'melancholy'
+      }
+    }
   },
   {
     id: 'm18',
@@ -348,7 +551,14 @@ export const memories = [
     title: '湖边的诺言',
     content: '"你会永远爱我吗？"她靠在你肩上问。"永远。"你坚定地说。"永远有多远？""就像这颗石头，即使海枯石烂，也不会变。"你捡起湖边的小石子递给她。她小心翼翼地收好，"那我就把它当作我们的信物。"湖水依旧，诺言却早已随着雾气飘散。',
     emotion: 'determined',
-    year: '五年前'
+    year: '五年前',
+    timeVariants: {
+      night: {
+        title: '深夜的诺言',
+        content: '深夜的湖畔只有你一个人。五年前的这个夜晚，她靠在你肩上问："你会永远爱我吗？""永远。"你捡起这颗小石子递给她，"就像它一样，永远不变。"湖水依旧，可诺言呢？',
+        emotion: 'determined'
+      }
+    }
   }
 ]
 

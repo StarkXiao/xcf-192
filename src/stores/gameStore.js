@@ -4,6 +4,7 @@ import { useStoryStore } from './storyStore'
 import { useSaveStore } from './saveStore'
 import { useArchiveStore } from './archiveStore'
 import { useMoodStore } from './moodStore'
+import { useTimeStore } from './timeStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -32,6 +33,7 @@ export const useGameStore = defineStore('game', () => {
   const saveStore = useSaveStore()
   const archiveStore = useArchiveStore()
   const moodStore = useMoodStore()
+  const timeStore = useTimeStore()
 
   const moodStateName = computed(() => moodStore.moodStateName)
   const moodStateColor = computed(() => moodStore.moodStateColor)
@@ -103,6 +105,37 @@ export const useGameStore = defineStore('game', () => {
     return chapter ? chapter.isFinalChapter : false
   })
 
+  const currentTimePeriod = computed(() => timeStore.currentTimePeriod)
+  const currentPeriodConfig = computed(() => timeStore.currentPeriodConfig)
+  const formattedGameTime = computed(() => timeStore.formattedTime)
+  const isNight = computed(() => timeStore.isNight)
+  const isDay = computed(() => timeStore.isDay)
+  const isDawn = computed(() => timeStore.isDawn)
+  const isDusk = computed(() => timeStore.isDusk)
+  const timeAtmosphere = computed(() => timeStore.timeAtmosphere)
+  const timePeriodChanged = computed(() => timeStore.timePeriodChanged)
+  const timeProgress = computed(() => timeStore.timeProgress)
+
+  const combinedAtmosphere = computed(() => {
+    const chapterAtmos = currentChapterAtmosphere.value || {}
+    const timeAtmos = timeAtmosphere.value
+    return {
+      fogMultiplier: (chapterAtmos.fogMultiplier || 1) * (timeAtmos.fogMultiplier || 1),
+      brightness: (chapterAtmos.brightness || 1) * (timeAtmos.brightness || 1),
+      saturation: (chapterAtmos.saturation || 1) * (timeAtmos.saturation || 1),
+      backgroundTint: timeAtmos.backgroundTint || chapterAtmos.backgroundTint,
+      ambientColor: timeAtmos.ambientColor
+    }
+  })
+
+  const visibleItemsForCurrentScene = computed(() => {
+    const scene = currentScene.value
+    if (!scene || !scene.items) return []
+    return scene.items.filter(item => 
+      timeStore.isItemVisibleAtTime(item, timeStore.currentHour)
+    )
+  })
+
   function checkChapterProgress() {
     const calculatedChapter = storyStore.getCurrentChapter(memoryProgressPercent.value)
     if (calculatedChapter && calculatedChapter.id > currentChapterId.value) {
@@ -167,10 +200,21 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function isSceneAccessible(sceneId) {
-    return storyStore.isSceneUnlocked(sceneId, currentChapterId.value)
+    const chapterUnlocked = storyStore.isSceneUnlocked(sceneId, currentChapterId.value)
+    if (!chapterUnlocked) return false
+    
+    const scene = storyStore.getSceneById(sceneId)
+    return timeStore.isSceneAccessibleAtTime(scene, timeStore.currentHour)
   }
 
   function getCurrentSceneDescription() {
+    const scene = currentScene.value
+    if (scene && scene.timeDescriptions) {
+      const period = timeStore.currentTimePeriod
+      if (scene.timeDescriptions[period]) {
+        return scene.timeDescriptions[period]
+      }
+    }
     return storyStore.getChapterSceneDescription(currentSceneId.value, currentChapterId.value)
   }
 
@@ -187,11 +231,15 @@ export const useGameStore = defineStore('game', () => {
       if (savedGame.moodData) {
         moodStore.loadSaveData(savedGame.moodData)
       }
+      if (savedGame.timeData) {
+        timeStore.loadSaveData(savedGame.timeData)
+      }
     } else {
       resetGame()
     }
     gameState.value = 'playing'
     startTimer()
+    timeStore.startTimeFlow()
 
     if (!savedGame) {
       setTimeout(() => {
@@ -219,6 +267,11 @@ export const useGameStore = defineStore('game', () => {
     } else {
       moodStore.resetMood()
     }
+    if (branchData.timeData) {
+      timeStore.loadSaveData(branchData.timeData)
+    } else {
+      timeStore.resetTime()
+    }
 
     saveStore.saveGame({
       currentSceneId: currentSceneId.value,
@@ -228,11 +281,13 @@ export const useGameStore = defineStore('game', () => {
       craftedItems: [...craftedItems.value],
       unlockedHiddenMemories: [...unlockedHiddenMemories.value],
       currentChapterId: currentChapterId.value,
-      moodData: moodStore.getSaveData()
+      moodData: moodStore.getSaveData(),
+      timeData: timeStore.getSaveData()
     })
 
     gameState.value = 'playing'
     startTimer()
+    timeStore.startTimeFlow()
     return true
   }
 
@@ -246,6 +301,7 @@ export const useGameStore = defineStore('game', () => {
     currentChapterId.value = 1
     isPaused.value = false
     moodStore.resetMood()
+    timeStore.resetTime()
     saveStore.clearSave()
   }
 
@@ -266,10 +322,12 @@ export const useGameStore = defineStore('game', () => {
 
   function pauseGame() {
     isPaused.value = true
+    timeStore.pauseTime()
   }
 
   function resumeGame() {
     isPaused.value = false
+    timeStore.resumeTime()
   }
 
   function changeScene(sceneId) {
@@ -282,11 +340,16 @@ export const useGameStore = defineStore('game', () => {
   function findItem(itemId) {
     if (!foundItems.value.includes(itemId)) {
       foundItems.value.push(itemId)
+      const period = timeStore.currentTimePeriod
+      archiveStore.recordTimePeriodStat(period, 'item')
+      
       const memory = storyStore.getMemoryByItemId(itemId)
       if (memory && !triggeredMemories.value.includes(memory.id)) {
+        const variantMemory = timeStore.getMemoryVariant(memory, timeStore.currentHour)
         triggeredMemories.value.push(memory.id)
-        triggerMoodChange(memory.emotion)
-        showMemory(memory)
+        archiveStore.recordTimePeriodStat(period, 'memory')
+        triggerMoodChange(variantMemory.emotion)
+        showMemory(variantMemory)
       }
       archiveToGlobal()
       saveProgress()
@@ -358,7 +421,8 @@ export const useGameStore = defineStore('game', () => {
         craftedItems: [...craftedItems.value],
         unlockedHiddenMemories: [...unlockedHiddenMemories.value],
         currentChapterId: currentChapterId.value,
-        moodData: moodStore.getSaveData()
+        moodData: moodStore.getSaveData(),
+        timeData: timeStore.getSaveData()
       }
     )
 
@@ -427,10 +491,12 @@ export const useGameStore = defineStore('game', () => {
         craftedItems: [...craftedItems.value],
         unlockedHiddenMemories: [...unlockedHiddenMemories.value],
         currentChapterId: currentChapterId.value,
-        moodData: moodStore.getSaveData()
+        moodData: moodStore.getSaveData(),
+        timeData: timeStore.getSaveData()
       }
     )
 
+    timeStore.stopTimeFlow()
     saveStore.clearSave()
 
     gameState.value = 'end'
@@ -445,7 +511,8 @@ export const useGameStore = defineStore('game', () => {
       craftedItems: [...craftedItems.value],
       unlockedHiddenMemories: [...unlockedHiddenMemories.value],
       currentChapterId: currentChapterId.value,
-      moodData: moodStore.getSaveData()
+      moodData: moodStore.getSaveData(),
+      timeData: timeStore.getSaveData()
     })
   }
 
@@ -454,6 +521,7 @@ export const useGameStore = defineStore('game', () => {
       clearInterval(timerInterval.value)
       timerInterval.value = null
     }
+    timeStore.stopTimeFlow()
     gameState.value = 'start'
   }
 
@@ -531,6 +599,18 @@ export const useGameStore = defineStore('game', () => {
     chapterProgress,
     currentChapterAtmosphere,
     isFinalChapter,
+    currentTimePeriod,
+    currentPeriodConfig,
+    formattedGameTime,
+    isNight,
+    isDay,
+    isDawn,
+    isDusk,
+    timeAtmosphere,
+    timePeriodChanged,
+    timeProgress,
+    combinedAtmosphere,
+    visibleItemsForCurrentScene,
     startGame,
     startGameFromBranch,
     resetGame,

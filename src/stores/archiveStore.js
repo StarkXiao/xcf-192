@@ -9,6 +9,12 @@ export const useArchiveStore = defineStore('archive', () => {
   const everCraftedItems = ref([])
   const everTriggeredMemories = ref([])
   const branchSaves = ref([])
+  const timePeriodStats = ref({
+    dawn: { itemsFound: 0, memoriesTriggered: 0 },
+    day: { itemsFound: 0, memoriesTriggered: 0 },
+    dusk: { itemsFound: 0, memoriesTriggered: 0 },
+    night: { itemsFound: 0, memoriesTriggered: 0 }
+  })
 
   const hasArchive = computed(() => {
     return unlockedEndings.value.length > 0
@@ -29,6 +35,12 @@ export const useArchiveStore = defineStore('archive', () => {
       everCraftedItems.value = parsed.everCraftedItems || []
       everTriggeredMemories.value = parsed.everTriggeredMemories || []
       branchSaves.value = parsed.branchSaves || []
+      timePeriodStats.value = parsed.timePeriodStats || {
+        dawn: { itemsFound: 0, memoriesTriggered: 0 },
+        day: { itemsFound: 0, memoriesTriggered: 0 },
+        dusk: { itemsFound: 0, memoriesTriggered: 0 },
+        night: { itemsFound: 0, memoriesTriggered: 0 }
+      }
     } catch (e) {
       console.error('读取档案失败:', e)
     }
@@ -41,7 +53,8 @@ export const useArchiveStore = defineStore('archive', () => {
         everUnlockedHiddenMemories: everUnlockedHiddenMemories.value,
         everCraftedItems: everCraftedItems.value,
         everTriggeredMemories: everTriggeredMemories.value,
-        branchSaves: branchSaves.value
+        branchSaves: branchSaves.value,
+        timePeriodStats: timePeriodStats.value
       }
       localStorage.setItem(ARCHIVE_KEY, JSON.stringify(data))
     } catch (e) {
@@ -117,12 +130,29 @@ export const useArchiveStore = defineStore('archive', () => {
     persist()
   }
 
+  function recordTimePeriodStat(period, type) {
+    if (timePeriodStats.value[period]) {
+      if (type === 'item') {
+        timePeriodStats.value[period].itemsFound++
+      } else if (type === 'memory') {
+        timePeriodStats.value[period].memoriesTriggered++
+      }
+      persist()
+    }
+  }
+
   function clearArchive() {
     unlockedEndings.value = []
     everUnlockedHiddenMemories.value = []
     everCraftedItems.value = []
     everTriggeredMemories.value = []
     branchSaves.value = []
+    timePeriodStats.value = {
+      dawn: { itemsFound: 0, memoriesTriggered: 0 },
+      day: { itemsFound: 0, memoriesTriggered: 0 },
+      dusk: { itemsFound: 0, memoriesTriggered: 0 },
+      night: { itemsFound: 0, memoriesTriggered: 0 }
+    }
     try {
       localStorage.removeItem(ARCHIVE_KEY)
     } catch (e) {
@@ -154,6 +184,7 @@ export const useArchiveStore = defineStore('archive', () => {
     everCraftedItems,
     everTriggeredMemories,
     branchSaves,
+    timePeriodStats,
     hasArchive,
     endingCount,
     init,
@@ -162,6 +193,7 @@ export const useArchiveStore = defineStore('archive', () => {
     recordHiddenMemories,
     recordCraftedItems,
     recordTriggeredMemories,
+    recordTimePeriodStat,
     createBranchSave,
     loadBranchSave,
     deleteBranchSave,
