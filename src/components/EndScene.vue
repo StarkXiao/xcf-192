@@ -155,6 +155,12 @@
         <button class="hint-btn" @click="openArchive">查看档案</button>
       </div>
       
+      <div class="journal-hint">
+        <span class="hint-icon">📔</span>
+        整理你的回忆图鉴
+        <button class="hint-btn journal-hint-btn" @click="openJournal">翻看手账</button>
+      </div>
+      
       <div class="branch-continue" v-if="hasBranches">
         <h4 class="branch-title">🌿 从分支存档继续</h4>
         <div class="branch-list">
@@ -368,6 +374,10 @@ function getFinalGameTime() {
 
 function openArchive() {
   gameStore.openArchive()
+}
+
+function openJournal() {
+  gameStore.openJournal()
 }
 
 function loadBranch(branchId) {
@@ -973,6 +983,31 @@ function returnHome() {
 
 .hint-btn:hover {
   background: rgba(212, 165, 116, 0.2);
+}
+
+.journal-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: rgba(102, 126, 234, 0.06);
+  border: 1px solid rgba(102, 126, 234, 0.15);
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  color: #a0a0b0;
+}
+
+.journal-hint-btn {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.1);
+  color: #a5b4fc;
+}
+
+.journal-hint-btn:hover {
+  background: rgba(102, 126, 234, 0.2);
 }
 
 .branch-continue {

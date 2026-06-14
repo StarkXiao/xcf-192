@@ -23,6 +23,7 @@ export const useGameStore = defineStore('game', () => {
   const showCraftingModal = ref(false)
   const craftResultMessage = ref(null)
   const showArchiveModal = ref(false)
+  const showJournalModal = ref(false)
   const currentChapterId = ref(1)
   const showChapterNarration = ref(false)
   const currentNarrationChapter = ref(null)
@@ -553,6 +554,14 @@ export const useGameStore = defineStore('game', () => {
     showArchiveModal.value = false
   }
 
+  function openJournal() {
+    showJournalModal.value = true
+  }
+
+  function closeJournal() {
+    showJournalModal.value = false
+  }
+
   return {
     gameState,
     currentSceneId,
@@ -569,6 +578,7 @@ export const useGameStore = defineStore('game', () => {
     showCraftingModal,
     craftResultMessage,
     showArchiveModal,
+    showJournalModal,
     currentChapterId,
     showChapterNarration,
     currentNarrationChapter,
@@ -634,6 +644,8 @@ export const useGameStore = defineStore('game', () => {
     isHiddenMemoryUnlocked,
     openArchive,
     closeArchive,
+    openJournal,
+    closeJournal,
     checkChapterProgress,
     advanceChapter,
     closeChapterNarration,

@@ -63,6 +63,9 @@
           ✨
           <span v-if="availableRecipesCount > 0" class="craft-badge">{{ availableRecipesCount }}</span>
         </button>
+        <button class="menu-btn journal-btn" @click="openJournal" :title="'手账图鉴'">
+          📖
+        </button>
         <button class="menu-btn" @click="showMenu = !showMenu">
           ⋮
         </button>
@@ -222,6 +225,9 @@
           <div class="menu-buttons">
             <button class="menu-btn-item craft-menu-btn" @click="openCraftingFromMenu">
               ✨ 旧物合成工坊
+            </button>
+            <button class="menu-btn-item journal-menu-btn" @click="openJournalFromMenu">
+              📖 手账图鉴
             </button>
             <button class="menu-btn-item" @click="saveAndContinue">
               💾 保存并继续
@@ -409,6 +415,15 @@ function openCraftingPanel() {
 function openCraftingFromMenu() {
   showMenu.value = false
   gameStore.openCrafting()
+}
+
+function openJournal() {
+  gameStore.openJournal()
+}
+
+function openJournalFromMenu() {
+  showMenu.value = false
+  gameStore.openJournal()
 }
 
 function saveAndContinue() {
@@ -787,6 +802,17 @@ function getStarStyle(index) {
 .crafting-btn:hover {
   background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.3));
   box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
+}
+
+.journal-btn {
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.2));
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.journal-btn:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.3));
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
 }
 
 .craft-badge {
@@ -1246,6 +1272,16 @@ function getStarStyle(index) {
 
 .craft-menu-btn:hover {
   background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.3));
+}
+
+.journal-menu-btn {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.2));
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a5b4fc;
+}
+
+.journal-menu-btn:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.3));
 }
 
 .found-toast {

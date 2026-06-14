@@ -5,6 +5,7 @@
     <GameScene v-else-if="gameState === 'playing'" />
     <EndScene v-else-if="gameState === 'end'" />
     <ArchiveModal />
+    <JournalModal />
   </div>
 </template>
 
@@ -16,6 +17,7 @@ import GameScene from './components/GameScene.vue'
 import EndScene from './components/EndScene.vue'
 import BackgroundMusic from './components/BackgroundMusic.vue'
 import ArchiveModal from './components/ArchiveModal.vue'
+import JournalModal from './components/JournalModal.vue'
 
 const gameStore = useGameStore()
 const gameState = computed(() => gameStore.gameState)
