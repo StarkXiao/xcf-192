@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
-import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters } from '../data/storyData'
+import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters, keyChoices, hiddenItems, reunionEndings, endingWeightLabels } from '../data/storyData'
 import { ENDING_MOOD_THRESHOLDS } from './moodStore'
+
+export const EFFICIENCY_LEVELS = {
+  PERFECT: 'perfect',
+  EXCELLENT: 'excellent',
+  GOOD: 'good',
+  NORMAL: 'normal',
+  POOR: 'poor'
+}
 
 export const useStoryStore = defineStore('story', () => {
   function getSceneById(sceneId) {
@@ -84,6 +92,203 @@ export const useStoryStore = defineStore('story', () => {
 
   function getAllSpecialEndings() {
     return specialEndings
+  }
+
+  function getKeyChoiceById(choiceId) {
+    return keyChoices.find(c => c.id === choiceId)
+  }
+
+  function getKeyChoiceByTriggerItem(itemId, chapterId) {
+    return keyChoices.find(c => c.triggerItemId === itemId && c.chapter <= chapterId)
+  }
+
+  function getAllKeyChoices() {
+    return keyChoices
+  }
+
+  function getHiddenItemById(hiId) {
+    return hiddenItems.find(h => h.id === hiId)
+  }
+
+  function getAllHiddenItems() {
+    return hiddenItems
+  }
+
+  function getTotalHiddenItemsCount() {
+    return hiddenItems.length
+  }
+
+  function checkHiddenItemUnlock(baseItemId, inspectCount, timePeriod, foundItemsList) {
+    const hiddenItemMap = {
+      notebook: 'hi_locked_diary_page',
+      photo: 'hi_photo_back',
+      ticket: 'hi_ticket_stub',
+      carving: 'hi_tree_initial',
+      bottle: 'hi_bottle_second'
+    }
+    const conditionMap = {
+      hi_locked_diary_page: () => baseItemId === 'notebook' && inspectCount >= 3 && timePeriod === 'night',
+      hi_photo_back: () => baseItemId === 'photo' && inspectCount >= 2 && timePeriod === 'dusk',
+      hi_ticket_stub: () => baseItemId === 'ticket' && inspectCount >= 2 && timePeriod === 'dawn',
+      hi_tree_initial: () => baseItemId === 'carving' && inspectCount >= 3 && timePeriod === 'dusk',
+      hi_bottle_second: () => baseItemId === 'bottle' && inspectCount >= 3 && timePeriod === 'night'
+    }
+    const targetId = hiddenItemMap[baseItemId]
+    if (!targetId) return null
+    const hi = getHiddenItemById(targetId)
+    if (!hi) return null
+    const condition = conditionMap[targetId]
+    if (condition && condition()) {
+      return hi
+    }
+    return null
+  }
+
+  function getAllReunionEndings() {
+    return reunionEndings
+  }
+
+  function getEndingWeightLabels() {
+    return endingWeightLabels
+  }
+
+  function getEndingWeightLabel(weightKey) {
+    return endingWeightLabels[weightKey] || weightKey
+  }
+
+  function calculateFindEfficiency(foundCount, totalItems, timeUsed) {
+    const percentage = totalItems > 0 ? foundCount / totalItems : 0
+    const totalTime = 300
+    const perfectTime = 180
+    const goodTime = 220
+    const normalTime = 260
+
+    if (percentage >= 1 && timeUsed <= perfectTime) return EFFICIENCY_LEVELS.PERFECT
+    if (percentage >= 0.9 && timeUsed <= goodTime) return EFFICIENCY_LEVELS.EXCELLENT
+    if (percentage >= 0.75 && timeUsed <= normalTime) return EFFICIENCY_LEVELS.GOOD
+    if (percentage >= 0.5) return EFFICIENCY_LEVELS.NORMAL
+    return EFFICIENCY_LEVELS.POOR
+  }
+
+  function calculateMemoryCompleteness(triggeredMemoriesCount, totalMemories, unlockedHMCount, totalHMCount) {
+    const normalRate = totalMemories > 0 ? triggeredMemoriesCount / totalMemories : 0
+    const hmRate = totalHMCount > 0 ? unlockedHMCount / totalHMCount : 0
+    const combined = normalRate * 0.6 + hmRate * 0.4
+
+    if (combined >= 0.95) return EFFICIENCY_LEVELS.PERFECT
+    if (combined >= 0.8) return EFFICIENCY_LEVELS.EXCELLENT
+    if (combined >= 0.6) return EFFICIENCY_LEVELS.GOOD
+    if (combined >= 0.35) return EFFICIENCY_LEVELS.NORMAL
+    return EFFICIENCY_LEVELS.POOR
+  }
+
+  function checkEndingRequirements(ending, params) {
+    const req = ending.requirements
+    if (!req) return true
+
+    if (req.moodMin !== undefined && params.moodValue < req.moodMin) return false
+    if (req.findEfficiency && req.findEfficiency !== params.findEfficiency) {
+      const levelOrder = [EFFICIENCY_LEVELS.POOR, EFFICIENCY_LEVELS.NORMAL, EFFICIENCY_LEVELS.GOOD, EFFICIENCY_LEVELS.EXCELLENT, EFFICIENCY_LEVELS.PERFECT]
+      const reqLevel = levelOrder.indexOf(req.findEfficiency)
+      const currentLevel = levelOrder.indexOf(params.findEfficiency)
+      if (currentLevel < reqLevel) return false
+    }
+    if (req.memoryCompleteness && req.memoryCompleteness !== params.memoryCompleteness) {
+      const levelOrder = [EFFICIENCY_LEVELS.POOR, EFFICIENCY_LEVELS.NORMAL, EFFICIENCY_LEVELS.GOOD, EFFICIENCY_LEVELS.EXCELLENT, EFFICIENCY_LEVELS.PERFECT]
+      const reqLevel = levelOrder.indexOf(req.memoryCompleteness)
+      const currentLevel = levelOrder.indexOf(params.memoryCompleteness)
+      if (currentLevel < reqLevel) return false
+    }
+    if (req.keyChoices && req.keyChoices.length > 0) {
+      const matchedCount = req.keyChoices.filter(kc => params.madeChoices.includes(kc)).length
+      if (matchedCount < Math.ceil(req.keyChoices.length * 0.5)) return false
+    }
+    if (req.hiddenItems !== undefined && params.foundHiddenItemsCount < req.hiddenItems) return false
+    if (req.craftedItems && req.craftedItems.length > 0) {
+      const hasAll = req.craftedItems.every(ci => params.craftedItems.includes(ci))
+      if (!hasAll) return false
+    }
+    return true
+  }
+
+  function calculateEndingMatchScore(ending, params) {
+    let score = ending.score || 0
+    const req = ending.requirements
+
+    if (req?.keyChoices) {
+      const matchedCount = req.keyChoices.filter(kc => params.madeChoices.includes(kc)).length
+      score += matchedCount * 50
+    }
+
+    if (params.endingWeights) {
+      const weightBonus = Object.values(params.endingWeights).reduce((sum, v) => sum + v, 0)
+      score += weightBonus * 10
+    }
+
+    return score
+  }
+
+  function getReunionEnding(params) {
+    const totalMemories = getAllMemories().length
+    const findEfficiency = calculateFindEfficiency(params.foundCount, params.totalItems, params.timeUsed)
+    const memoryCompleteness = calculateMemoryCompleteness(
+      params.triggeredMemoriesCount,
+      totalMemories,
+      params.unlockedHMCount,
+      params.totalHMCount
+    )
+
+    const fullParams = {
+      ...params,
+      findEfficiency,
+      memoryCompleteness
+    }
+
+    const matched = []
+    for (const ending of reunionEndings) {
+      if (checkEndingRequirements(ending, fullParams)) {
+        matched.push({
+          ending,
+          score: calculateEndingMatchScore(ending, fullParams)
+        })
+      }
+    }
+
+    let selected
+    if (matched.length > 0) {
+      matched.sort((a, b) => b.score - a.score)
+      selected = matched[0].ending
+    } else {
+      selected = getFallbackEnding(fullParams)
+    }
+
+    return {
+      id: selected.id,
+      type: selected.type,
+      title: selected.title,
+      subtitle: selected.subtitle,
+      description: selected.description,
+      scene: selected.scene,
+      score: selected.score,
+      findEfficiency,
+      memoryCompleteness,
+      isSpecial: ['legendary', 'epic', 'special'].includes(selected.type),
+      moodValue: params.moodValue
+    }
+  }
+
+  function getFallbackEnding(params) {
+    const percentage = params.foundCount / (params.totalItems || 1)
+    if (percentage >= 0.8 && params.moodValue >= 60) {
+      return reunionEndings.find(e => e.id === 're_nostalgic_reunion') || reunionEndings[4]
+    } else if (percentage >= 0.5 && params.moodValue >= 35) {
+      return reunionEndings.find(e => e.id === 're_warm_encounter') || reunionEndings[6]
+    } else if (percentage >= 0.3 && params.moodValue >= 20) {
+      return reunionEndings.find(e => e.id === 're_honest_start') || reunionEndings[8]
+    } else if (params.moodValue >= 10) {
+      return reunionEndings.find(e => e.id === 're_fog_missing') || reunionEndings[9]
+    }
+    return reunionEndings.find(e => e.id === 're_despair_lost') || reunionEndings[10]
   }
 
   function getAllChapters() {
@@ -265,6 +470,19 @@ export const useStoryStore = defineStore('story', () => {
     isSceneUnlocked,
     getChapterAtmosphere,
     getChapterSceneDescription,
-    getMemoryPercent
+    getMemoryPercent,
+    getKeyChoiceById,
+    getKeyChoiceByTriggerItem,
+    getAllKeyChoices,
+    getHiddenItemById,
+    getAllHiddenItems,
+    getTotalHiddenItemsCount,
+    checkHiddenItemUnlock,
+    getAllReunionEndings,
+    getEndingWeightLabels,
+    getEndingWeightLabel,
+    calculateFindEfficiency,
+    calculateMemoryCompleteness,
+    getReunionEnding
   }
 })

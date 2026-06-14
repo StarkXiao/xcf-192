@@ -6,6 +6,7 @@
     <EndScene v-else-if="gameState === 'end'" />
     <ArchiveModal />
     <JournalModal />
+    <KeyChoiceModal />
   </div>
 </template>
 
@@ -18,6 +19,7 @@ import EndScene from './components/EndScene.vue'
 import BackgroundMusic from './components/BackgroundMusic.vue'
 import ArchiveModal from './components/ArchiveModal.vue'
 import JournalModal from './components/JournalModal.vue'
+import KeyChoiceModal from './components/KeyChoiceModal.vue'
 
 const gameStore = useGameStore()
 const gameState = computed(() => gameStore.gameState)

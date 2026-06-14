@@ -8,6 +8,7 @@ export const useArchiveStore = defineStore('archive', () => {
   const everUnlockedHiddenMemories = ref([])
   const everCraftedItems = ref([])
   const everTriggeredMemories = ref([])
+  const everFoundHiddenItems = ref([])
   const branchSaves = ref([])
   const timePeriodStats = ref({
     dawn: { itemsFound: 0, memoriesTriggered: 0 },
@@ -20,6 +21,7 @@ export const useArchiveStore = defineStore('archive', () => {
     return unlockedEndings.value.length > 0
       || everUnlockedHiddenMemories.value.length > 0
       || everCraftedItems.value.length > 0
+      || everFoundHiddenItems.value.length > 0
       || branchSaves.value.length > 0
   })
 
@@ -34,6 +36,7 @@ export const useArchiveStore = defineStore('archive', () => {
       everUnlockedHiddenMemories.value = parsed.everUnlockedHiddenMemories || []
       everCraftedItems.value = parsed.everCraftedItems || []
       everTriggeredMemories.value = parsed.everTriggeredMemories || []
+      everFoundHiddenItems.value = parsed.everFoundHiddenItems || []
       branchSaves.value = parsed.branchSaves || []
       timePeriodStats.value = parsed.timePeriodStats || {
         dawn: { itemsFound: 0, memoriesTriggered: 0 },
@@ -53,12 +56,20 @@ export const useArchiveStore = defineStore('archive', () => {
         everUnlockedHiddenMemories: everUnlockedHiddenMemories.value,
         everCraftedItems: everCraftedItems.value,
         everTriggeredMemories: everTriggeredMemories.value,
+        everFoundHiddenItems: everFoundHiddenItems.value,
         branchSaves: branchSaves.value,
         timePeriodStats: timePeriodStats.value
       }
       localStorage.setItem(ARCHIVE_KEY, JSON.stringify(data))
     } catch (e) {
       console.error('保存档案失败:', e)
+    }
+  }
+
+  function recordHiddenItem(hiId) {
+    if (!everFoundHiddenItems.value.includes(hiId)) {
+      everFoundHiddenItems.value.push(hiId)
+      persist()
     }
   }
 
@@ -146,6 +157,7 @@ export const useArchiveStore = defineStore('archive', () => {
     everUnlockedHiddenMemories.value = []
     everCraftedItems.value = []
     everTriggeredMemories.value = []
+    everFoundHiddenItems.value = []
     branchSaves.value = []
     timePeriodStats.value = {
       dawn: { itemsFound: 0, memoriesTriggered: 0 },
@@ -176,6 +188,10 @@ export const useArchiveStore = defineStore('archive', () => {
     return everTriggeredMemories.value.includes(memoryId)
   }
 
+  function isHiddenItemEverFound(hiId) {
+    return everFoundHiddenItems.value.includes(hiId)
+  }
+
   init()
 
   return {
@@ -183,6 +199,7 @@ export const useArchiveStore = defineStore('archive', () => {
     everUnlockedHiddenMemories,
     everCraftedItems,
     everTriggeredMemories,
+    everFoundHiddenItems,
     branchSaves,
     timePeriodStats,
     hasArchive,
@@ -194,6 +211,7 @@ export const useArchiveStore = defineStore('archive', () => {
     recordCraftedItems,
     recordTriggeredMemories,
     recordTimePeriodStat,
+    recordHiddenItem,
     createBranchSave,
     loadBranchSave,
     deleteBranchSave,
@@ -201,6 +219,7 @@ export const useArchiveStore = defineStore('archive', () => {
     isEndingUnlocked,
     isHiddenMemoryEverUnlocked,
     isCraftedItemEverObtained,
-    isMemoryEverTriggered
+    isMemoryEverTriggered,
+    isHiddenItemEverFound
   }
 })

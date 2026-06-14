@@ -735,6 +735,422 @@ export const specialEndings = [
   }
 ]
 
+export const keyChoices = [
+  {
+    id: 'kc_leave',
+    chapter: 2,
+    triggerItemId: 'letter',
+    title: '关于那封未寄出的信',
+    description: '你握着这封写满思念的信，五年了，你终于有勇气面对它。你要怎么做？',
+    options: [
+      {
+        id: 'kc_leave_send',
+        label: '📮 把信寄出去',
+        resultText: '你走到邮局，把信投入了邮筒。五年来的沉重，在这一刻终于放下了。也许，她会收到的。',
+        effects: { mood: 8, endingWeight: { sincere: 2, courage: 1 } }
+      },
+      {
+        id: 'kc_leave_keep',
+        label: '📦 继续珍藏这封信',
+        resultText: '你把信小心翼翼地收进了口袋。有些话，也许永远不必说出口。珍藏本身，就是一种答案。',
+        effects: { mood: 3, endingWeight: { nostalgic: 2, reserved: 1 } }
+      },
+      {
+        id: 'kc_leave_burn',
+        label: '🔥 让过去随风而逝',
+        resultText: '你点燃了信，看着它在火光中化作灰烬。五年的等待，也随烟消散。是时候，向前看了。',
+        effects: { mood: -5, endingWeight: { lettingGo: 2, decisive: 1 } }
+      }
+    ]
+  },
+  {
+    id: 'kc_ring',
+    chapter: 3,
+    triggerItemId: 'ring',
+    title: '关于那个玩笑般的承诺',
+    description: '你握着这枚易拉罐拉环，七年前的玩笑还历历在目。如果是现在，你会怎么做？',
+    options: [
+      {
+        id: 'kc_ring_serious',
+        label: '💎 这次是认真的',
+        resultText: '你紧紧攥着拉环，在心里默念：这一次，我不会再开玩笑了。我要用真正的戒指，补上这个迟到了七年的承诺。',
+        effects: { mood: 10, endingWeight: { sincere: 3, romantic: 2 } }
+      },
+      {
+        id: 'kc_ring_regret',
+        label: '😔 如果当时更认真一点...',
+        resultText: '你苦笑着摇摇头。七年前太年轻，以为玩笑就是浪漫。现在才明白，有些承诺，不能以玩笑的方式说出口。',
+        effects: { mood: -3, endingWeight: { regretful: 2, mature: 1 } }
+      },
+      {
+        id: 'kc_ring_hope',
+        label: '✨ 还有机会的',
+        resultText: '你把拉环收好。七年了，这枚拉环还在，你们的故事，也一定还没有结束。',
+        effects: { mood: 6, endingWeight: { hopeful: 2, romantic: 1 } }
+      }
+    ]
+  },
+  {
+    id: 'kc_promise',
+    chapter: 4,
+    triggerItemId: 'promise',
+    title: '关于永恒的诺言',
+    description: '湖边的夜风拂过，你握着这颗代表永恒的小石子。五年前的诺言，你还记得多少？',
+    options: [
+      {
+        id: 'kc_promise_keep',
+        label: '💪 我一直记得，从未忘记',
+        resultText: '你把石子贴近心口。五年的分离没有让你忘记，反而让这份诺言在心中越来越清晰。',
+        effects: { mood: 12, endingWeight: { loyal: 3, sincere: 2 } }
+      },
+      {
+        id: 'kc_promise_doubt',
+        label: '🤔 我...不确定了',
+        resultText: '五年太长，长到你开始怀疑，那些年少时的诺言，是否还作数。但你握着石子的手，却始终没有松开。',
+        effects: { mood: -2, endingWeight: { honest: 2, human: 1 } }
+      },
+      {
+        id: 'kc_promise_renew',
+        label: '🌟 让我重新许下这个诺言',
+        resultText: '你对着湖面，轻声说："我愿意重新许下这个诺言。不是对过去的你，而是对现在的你——不管你变成什么样子。"',
+        effects: { mood: 9, endingWeight: { mature: 2, romantic: 2 } }
+      }
+    ]
+  },
+  {
+    id: 'kc_final',
+    chapter: 5,
+    triggerScene: 'lake',
+    title: '最后的抉择',
+    description: '雾气散去，你看到她就站在湖畔。五年了，你终于再次见到了她。此刻，你的第一反应是？',
+    options: [
+      {
+        id: 'kc_final_run',
+        label: '🏃 冲上去紧紧抱住她',
+        resultText: '你什么都没说，只是用尽全身力气奔向她，把她紧紧拥入怀中。五年的等待、思念、遗憾，都化作了这一刻的拥抱。她在你怀里，轻声说："你终于来了。"',
+        effects: { mood: 15, endingWeight: { passionate: 3, sincere: 2 } },
+        requiredEndingWeights: { loyal: 1 }
+      },
+      {
+        id: 'kc_final_smile',
+        label: '😊 微笑着说"好久不见"',
+        resultText: '你站在原地，嘴角微微上扬，轻声说："好久不见。"她也笑了，泪水却从脸颊滑落："好久不见。"',
+        effects: { mood: 10, endingWeight: { mature: 3, gentle: 2 } }
+      },
+      {
+        id: 'kc_final_apologize',
+        label: '🙇 先说"对不起，我来晚了"',
+        resultText: '你深深鞠了一躬："对不起，我来晚了。五年了，让你一个人等了这么久。"她走过来，轻轻抬起你的头："没关系，你来了就好。"',
+        effects: { mood: 12, endingWeight: { sincere: 3, humble: 2 } }
+      },
+      {
+        id: 'kc_final_watch',
+        label: '👀 远远看着，不确定是不是她',
+        resultText: '你站在原地，不敢上前。五年了，你害怕这只是雾气中的幻影，害怕一靠近就会消散。她转过头，看到了你，笑了："傻瓜，还要我走过来吗？"',
+        effects: { mood: 4, endingWeight: { cautious: 2, human: 1 } }
+      }
+    ]
+  }
+]
+
+export const hiddenItems = [
+  {
+    id: 'hi_locked_diary_page',
+    name: '被锁住的日记页',
+    description: '日记本中被小心折起的一页，上面写着她从未示人的秘密。',
+    icon: '🔐',
+    rarity: 'epic',
+    unlockCondition: '在夜晚的书店找到日记本后，反复查看三次',
+    associatedHiddenMemory: 'hm3'
+  },
+  {
+    id: 'hi_photo_back',
+    name: '照片背后的字',
+    description: '翻到合照背面，用铅笔轻轻写着："和你在一起的每一天，都是最好的夏天。——你的玫瑰花"',
+    icon: '📝',
+    rarity: 'rare',
+    unlockCondition: '在黄昏的老街找到合照后，翻转查看',
+    associatedHiddenMemory: 'm4'
+  },
+  {
+    id: 'hi_ticket_stub',
+    name: '回程票根',
+    description: '旧车票的夹层里，藏着一张五年前的回程票。她买了两张票，一张去的，一张回的。',
+    icon: '🎟️',
+    rarity: 'rare',
+    unlockCondition: '在黎明的火车站找到旧车票后，仔细查看',
+    associatedHiddenMemory: 'm1'
+  },
+  {
+    id: 'hi_tree_initial',
+    name: '树心的刻字',
+    description: '两颗心的中间，还有一行极小的字："F & Y Forever"，是你们名字的首字母。',
+    icon: '❤️',
+    rarity: 'epic',
+    unlockCondition: '在黄昏的公园找到木刻后，近距离观察',
+    associatedHiddenMemory: 'm12'
+  },
+  {
+    id: 'hi_bottle_second',
+    name: '漂流瓶中的第二张纸条',
+    description: '你没有注意到，瓶子里还有第二张卷得更紧的纸条，上面只有一句话："我会一直等你，到世界的尽头。"',
+    icon: '🗒️',
+    rarity: 'legendary',
+    unlockCondition: '在夜晚的湖畔找到漂流瓶后，仔细翻找',
+    associatedHiddenMemory: 'm16'
+  }
+]
+
+export const reunionEndings = [
+  {
+    id: 're_true_love',
+    type: 'legendary',
+    title: '时光尽头的真爱',
+    subtitle: '✦ 传说级结局 · 完美重逢 ✦',
+    score: 1000,
+    requirements: {
+      findEfficiency: 'perfect',
+      memoryCompleteness: 'perfect',
+      keyChoices: ['kc_leave_send', 'kc_ring_serious', 'kc_promise_keep', 'kc_final_run'],
+      hiddenItems: 4,
+      craftedItems: ['time_key', 'promise_ring'],
+      moodMin: 85
+    },
+    description: '当承诺之戒戴上她无名指的那一刻，时光钥匙散发出耀眼的光芒。你终于说出了那句迟到了五年的话——"我爱你，从未改变。"\n\n她泪流满面，却笑得像个少女："我知道。我一直都知道。"\n\n五年的迷雾在瞬间消散，火车站、老街、咖啡馆、公园、书店、湖畔——所有你走过的地方，都开满了紫色的薰衣草。你们紧紧相拥，时间在这一刻停下，定格成永恒。\n\n原来命运从不残忍，它只是想让你们更懂珍惜。\n\n——时光会证明一切，而真爱，永不褪色。',
+    scene: {
+      background: 'linear-gradient(180deg, #1a0a00 0%, #3d2000 30%, #ff8c00 70%, #ffd700 100%)',
+      particles: 'lavender',
+      effects: ['timeStop', 'lightBurst'],
+      musicLayer: 'legendary'
+    }
+  },
+  {
+    id: 're_complete_puzzle',
+    type: 'epic',
+    title: '补全的记忆拼图',
+    subtitle: '✧ 史诗级结局 · 完整回忆 ✧',
+    score: 850,
+    requirements: {
+      findEfficiency: 'excellent',
+      memoryCompleteness: 'excellent',
+      keyChoices: ['kc_leave_keep', 'kc_ring_hope', 'kc_promise_renew'],
+      hiddenItems: 3,
+      craftedItems: ['memory_book', 'summer_locket'],
+      moodMin: 70
+    },
+    description: '四件合成之物在空中悬浮，散发出四种不同颜色的光芒，编织成一幅完整的画卷——从第一次约会的薰衣草，到盛夏的冰淇淋，到老树的誓言，再到湖畔的诺言。\n\n所有碎片终于拼成了完整的她，也拼成了完整的你。\n\n"你真的找回了所有的回忆..."她的眼眶泛红，"那么，这次换我来问你——你愿意，和我重新开始吗？"\n\n你没有说话，只是牵起了她的手。\n\n——有些故事，写好了开头，就一定会有结局。',
+    scene: {
+      background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1f4d 30%, #6b448a 70%, #a78bfa 100%)',
+      particles: 'stars',
+      effects: ['puzzlePieces', 'rainbow'],
+      musicLayer: 'epic'
+    }
+  },
+  {
+    id: 're_fate_second_chance',
+    type: 'special',
+    title: '命运的第二次机会',
+    subtitle: '✦ 特殊结局 · 命运回响 ✦',
+    score: 700,
+    requirements: {
+      findEfficiency: 'good',
+      memoryCompleteness: 'good',
+      keyChoices: ['kc_final_smile'],
+      hiddenItems: 2,
+      craftedItems: ['lake_message'],
+      moodMin: 55
+    },
+    description: '你奔跑在雾气弥漫的湖畔，那个身影越来越近。五年的思念、遗憾、等待，都化作最后百米的冲刺。\n\n"好久不见。"你微笑着说，声音有些颤抖。\n\n她也笑了，泪水从脸颊滑落："好久不见。我知道你会来的。"\n\n湖水荡漾，映出两个并肩的身影。这一次，谁也没有先放手。\n\n——有些约定，迟到五年，依然算数。',
+    scene: {
+      background: 'linear-gradient(180deg, #0a1a2e 0%, #1f3d4d 30%, #2a5a6b 70%, #38bdf8 100%)',
+      particles: 'water',
+      effects: ['ripple', 'softGlow'],
+      musicLayer: 'special'
+    }
+  },
+  {
+    id: 're_sincere_apology',
+    type: 'special',
+    title: '迟到的告白',
+    subtitle: '✦ 特殊结局 · 真诚之心 ✦',
+    score: 680,
+    requirements: {
+      findEfficiency: 'good',
+      memoryCompleteness: 'good',
+      keyChoices: ['kc_final_apologize'],
+      hiddenItems: 2,
+      craftedItems: ['time_key'],
+      moodMin: 60
+    },
+    description: '你深深鞠了一躬："对不起，我来晚了。五年了，让你一个人等了这么久。"\n\n她走过来，轻轻抬起你的头，用拇指拭去你眼角的泪："没关系，你来了就好。"\n\n"还有一句话，"你鼓起勇气，"五年前没说出口的——我喜欢你。从八年前的那个清晨开始，一直都是。"\n\n她踮起脚尖，在你额头上轻轻一吻："我也是。一直都是。"\n\n——有些话，虽然迟到，但从不会太晚。',
+    scene: {
+      background: 'linear-gradient(180deg, #1a1a2e 0%, #2d2d5a 30%, #4a4a8a 70%, #818cf8 100%)',
+      particles: 'petals',
+      effects: ['heartRise', 'gentleLight'],
+      musicLayer: 'special'
+    }
+  },
+  {
+    id: 're_nostalgic_reunion',
+    type: 'perfect',
+    title: '旧时光里的重逢',
+    subtitle: '完美结局 · 岁月安好',
+    score: 600,
+    requirements: {
+      findEfficiency: 'good',
+      memoryCompleteness: 'excellent',
+      keyChoices: ['kc_leave_keep'],
+      hiddenItems: 1,
+      moodMin: 65
+    },
+    description: '雾气散去，阳光透过梧桐树叶洒在你们身上。她就站在你们第一次约会的街角，和八年前一模一样。\n\n"你还记得这里？"她问。\n\n"怎么可能忘记。"你笑着回答，从口袋里掏出那封珍藏了五年的信，"这个，我想亲手交给你。"\n\n她接过信，指尖轻轻摩挲着信封："我也有东西给你。"她递过来一封信，同样的泛黄，同样的珍藏了五年。\n\n阳光正好，微风不燥。你们并肩坐在街角的长椅上，一起读着对方五年来的心事。\n\n——有些时光，从未远去。',
+    scene: {
+      background: 'linear-gradient(180deg, #2c3e50 0%, #34495e 30%, #4a6741 70%, #87ceeb 100%)',
+      particles: 'leaves',
+      effects: ['sunbeam', 'softWarmth'],
+      musicLayer: 'perfect'
+    }
+  },
+  {
+    id: 're_letting_go',
+    type: 'good',
+    title: '释然的告别与新生',
+    subtitle: '良好结局 · 各自安好',
+    score: 500,
+    requirements: {
+      findEfficiency: 'normal',
+      memoryCompleteness: 'normal',
+      keyChoices: ['kc_leave_burn'],
+      moodMin: 40
+    },
+    description: '你看着最后一缕雾气散去，也看到了她。五年了，她还是那么美，但你心中却出奇地平静。\n\n"你来了。"她说。\n\n"嗯。"你点点头，"我来...是想好好说声再见。"\n\n她愣了一下，然后笑了，笑得很释然："好啊。那...再见。"\n\n"再见。"你也笑了。\n\n你们朝相反的方向走去，没有回头。但你知道，这一次，你们都真正放下了。\n\n你抬头看看天，阳光正好。\n\n——有些故事，不需要结局。有些人，不需要重逢。放下，也是一种圆满。',
+    scene: {
+      background: 'linear-gradient(180deg, #1a1a2e 0%, #2d2d4d 30%, #4a4a6a 70%, #87ceeb 100%)',
+      particles: 'ashes',
+      effects: ['clearingFog', 'newDay'],
+      musicLayer: 'good'
+    }
+  },
+  {
+    id: 're_warm_encounter',
+    type: 'good',
+    title: '温暖的邂逅',
+    subtitle: '良好结局 · 重新认识',
+    score: 480,
+    requirements: {
+      findEfficiency: 'normal',
+      memoryCompleteness: 'good',
+      keyChoices: ['kc_final_watch'],
+      moodMin: 50
+    },
+    description: '你站在原地，不敢上前。五年了，你害怕这只是雾气中的幻影。\n\n她转过头，看到了你，笑了："傻瓜，还要我走过来吗？"\n\n她一步步走向你，你的心跳越来越快。她在你面前停下，歪着头看你："怎么，不认识我了？"\n\n"认识，"你深吸一口气，"只是...五年了，我需要一点时间确认这不是梦。"\n\n她轻轻掐了一下你的胳膊："疼吗？"\n\n"疼。"\n\n"那就不是梦。"她笑了，"你好，重新认识一下。我叫...算了，你应该还记得。"\n\n你也笑了："当然记得。你好，好久不见。"\n\n——有时候，最浪漫的重逢，是像第一次遇见那样，重新认识彼此。',
+    scene: {
+      background: 'linear-gradient(180deg, #3d2914 0%, #5d4e37 30%, #8b7355 70%, #ffd7a0 100%)',
+      particles: 'sparkle',
+      effects: ['cafeWarmth', 'softGlow'],
+      musicLayer: 'good'
+    }
+  },
+  {
+    id: 're_regretful_meeting',
+    type: 'normal',
+    title: '雾中的遗憾',
+    subtitle: '普通结局 · 错过的时光',
+    score: 350,
+    requirements: {
+      findEfficiency: 'normal',
+      memoryCompleteness: 'normal',
+      keyChoices: ['kc_ring_regret', 'kc_promise_doubt'],
+      moodMin: 25
+    },
+    description: '雾气散去了一些，你看到了她的轮廓。但她身边，好像还有另一个人。\n\n你停下了脚步。\n\n她也看到了你，愣了一下，然后走过来："好久不见。"\n\n"好久不见。"你努力挤出一个微笑，"这是...？"\n\n"一个朋友。"她简单介绍，没有多说。\n\n你们寒暄了几句，都是些无关紧要的话。五年来你在心里演练了无数次的重逢场景，没有一次是这样的。\n\n告别之后，你一个人走在老街。梧桐叶落在你肩上，你没有拍掉。\n\n——有些错过，就是一辈子。但至少，你看到她过得很好。',
+    scene: {
+      background: 'linear-gradient(180deg, #1a1a2e 0%, #2a2a3e 30%, #3a3a4e 70%, #5a5a6a 100%)',
+      particles: 'mist',
+      effects: ['lingeringFog', 'grayTone'],
+      musicLayer: 'normal'
+    }
+  },
+  {
+    id: 're_honest_start',
+    type: 'normal',
+    title: '诚实的开始',
+    subtitle: '普通结局 · 坦诚相见',
+    score: 380,
+    requirements: {
+      findEfficiency: 'normal',
+      memoryCompleteness: 'good',
+      keyChoices: ['kc_promise_doubt', 'kc_final_watch'],
+      moodMin: 30
+    },
+    description: '"五年了，我不确定我还记得你的喜好，不确定我们还能不能像以前那样，"你诚实地说，"但我想试一试。"\n\n她看着你，眼中有惊讶，也有欣慰："谢谢你的诚实。其实...我也不确定。五年可以改变很多事情。"\n\n"那...我们重新开始？不是回到过去，而是从现在开始，认识全新的彼此？"\n\n她伸出手："你好，很高兴认识你。"\n\n你握住她的手，这一次，没有颤抖："你好，我也是。"\n\n雾气正在慢慢散去，前方的路虽然不清晰，但你们终于并肩站在了一起。\n\n——诚实，是一切新开始的基石。',
+    scene: {
+      background: 'linear-gradient(180deg, #1a1a2e 0%, #2d2d4a 30%, #4a4a6a 70%, #88aacc 100%)',
+      particles: 'mist',
+      effects: ['clearingSlow', 'dawnLight'],
+      musicLayer: 'normal'
+    }
+  },
+  {
+    id: 're_fog_missing',
+    type: 'bad',
+    title: '雾中迷失',
+    subtitle: '遗憾结局 · 擦肩而过',
+    score: 200,
+    requirements: {
+      findEfficiency: 'poor',
+      memoryCompleteness: 'poor',
+      moodMin: 10
+    },
+    description: '雾气越来越浓，你几乎看不清前方的路。你好像看到了一个熟悉的身影，但当你揉揉眼睛，那身影又消失在了雾中。\n\n你在湖畔站了很久，直到天色完全暗下来。\n\n也许，她没有来。也许，你错过了。也许，你们的故事，五年前就已经结束了。\n\n你拖着疲惫的脚步，转身离开。身后的雾气中，有一个身影静静地看着你离去，手中握着那封你寄出去的信。\n\n——有些缘分，经不起等待。',
+    scene: {
+      background: 'linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 30%, #2d2d3d 70%, #3a3a4a 100%)',
+      particles: 'denseFog',
+      effects: ['thickFog', 'darkness'],
+      musicLayer: 'bad'
+    }
+  },
+  {
+    id: 're_despair_lost',
+    type: 'despair',
+    title: '心之迷雾',
+    subtitle: '绝望结局 · 永远的等待',
+    score: 100,
+    requirements: {
+      findEfficiency: 'poor',
+      memoryCompleteness: 'poor',
+      moodMin: 0
+    },
+    description: '雾气笼罩了整座城市，也笼罩了你的心。\n\n你找到了一些回忆的碎片，但更多的，还是失落。你错过了关键的时间，错过了重要的线索，也错过了...她。\n\n你坐在空荡荡的火车站，手中只有那枚停下来的怀表，指针永远停在8点23分。\n\n五年了，你还是没能走出这座雾城。\n\n也许，你会一直等下去。等到雾气散去，等到她回来，等到时间重新开始流动。\n\n——有些人，注定等待。有些结局，注定没有答案。',
+    scene: {
+      background: 'linear-gradient(180deg, #0a0505 0%, #1a0a0a 30%, #2d1515 70%, #3d1a1a 100%)',
+      particles: 'sorrow',
+      effects: ['totalDarkness', 'frozenTime'],
+      musicLayer: 'despair'
+    }
+  }
+]
+
+export const endingWeightLabels = {
+  sincere: '真诚',
+  courage: '勇气',
+  nostalgic: '怀旧',
+  reserved: '内敛',
+  lettingGo: '释然',
+  decisive: '果断',
+  romantic: '浪漫',
+  regretful: '遗憾',
+  mature: '成熟',
+  hopeful: '希冀',
+  loyal: '忠诚',
+  honest: '诚实',
+  human: '人性',
+  passionate: '热烈',
+  gentle: '温柔',
+  humble: '谦逊',
+  cautious: '谨慎'
+}
+
 export const chapters = [
   {
     id: 1,

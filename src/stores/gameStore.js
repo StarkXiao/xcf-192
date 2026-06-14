@@ -29,6 +29,14 @@ export const useGameStore = defineStore('game', () => {
   const currentNarrationChapter = ref(null)
   const showChapterUnlockHint = ref(false)
   const unlockHintChapter = ref(null)
+  const madeChoices = ref([])
+  const endingWeights = ref({})
+  const foundHiddenItems = ref([])
+  const itemInspectCount = ref({})
+  const showKeyChoiceModal = ref(false)
+  const currentKeyChoice = ref(null)
+  const keyChoiceResult = ref(null)
+  const showKeyChoiceResult = ref(false)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -105,6 +113,25 @@ export const useGameStore = defineStore('game', () => {
     const chapter = currentChapter.value
     return chapter ? chapter.isFinalChapter : false
   })
+
+  const foundHiddenItemsCount = computed(() => foundHiddenItems.value.length)
+  const totalHiddenItems = computed(() => storyStore.getTotalHiddenItemsCount())
+
+  const dominantEndingWeights = computed(() => {
+    const weights = endingWeights.value
+    const sorted = Object.entries(weights).sort((a, b) => b[1] - a[1])
+    return sorted.slice(0, 3)
+  })
+
+  const hasMadeChoice = (choiceOptionId) => {
+    return madeChoices.value.includes(choiceOptionId)
+  }
+
+  const isChoiceMadeFor = (choiceId) => {
+    const choice = storyStore.getKeyChoiceById(choiceId)
+    if (!choice) return false
+    return choice.options.some(opt => madeChoices.value.includes(opt.id))
+  }
 
   const currentTimePeriod = computed(() => timeStore.currentTimePeriod)
   const currentPeriodConfig = computed(() => timeStore.currentPeriodConfig)
@@ -229,6 +256,10 @@ export const useGameStore = defineStore('game', () => {
       craftedItems.value = savedGame.craftedItems || []
       unlockedHiddenMemories.value = savedGame.unlockedHiddenMemories || []
       currentChapterId.value = savedGame.currentChapterId || 1
+      madeChoices.value = savedGame.madeChoices || []
+      endingWeights.value = savedGame.endingWeights || {}
+      foundHiddenItems.value = savedGame.foundHiddenItems || []
+      itemInspectCount.value = savedGame.itemInspectCount || {}
       if (savedGame.moodData) {
         moodStore.loadSaveData(savedGame.moodData)
       }
@@ -262,6 +293,10 @@ export const useGameStore = defineStore('game', () => {
     craftedItems.value = branchData.craftedItems || []
     unlockedHiddenMemories.value = branchData.unlockedHiddenMemories || []
     currentChapterId.value = branchData.currentChapterId || 1
+    madeChoices.value = branchData.madeChoices || []
+    endingWeights.value = branchData.endingWeights || {}
+    foundHiddenItems.value = branchData.foundHiddenItems || []
+    itemInspectCount.value = branchData.itemInspectCount || {}
     isPaused.value = false
     if (branchData.moodData) {
       moodStore.loadSaveData(branchData.moodData)
@@ -301,6 +336,10 @@ export const useGameStore = defineStore('game', () => {
     unlockedHiddenMemories.value = []
     currentChapterId.value = 1
     isPaused.value = false
+    madeChoices.value = []
+    endingWeights.value = {}
+    foundHiddenItems.value = []
+    itemInspectCount.value = {}
     moodStore.resetMood()
     timeStore.resetTime()
     saveStore.clearSave()
@@ -335,6 +374,7 @@ export const useGameStore = defineStore('game', () => {
     if (storyStore.getSceneById(sceneId)) {
       currentSceneId.value = sceneId
       saveProgress()
+      triggerFinalKeyChoiceIfReady()
     }
   }
 
@@ -352,11 +392,99 @@ export const useGameStore = defineStore('game', () => {
         triggerMoodChange(variantMemory.emotion)
         showMemory(variantMemory)
       }
+
+      const keyChoice = storyStore.getKeyChoiceByTriggerItem(itemId, currentChapterId.value)
+      if (keyChoice && !isChoiceMadeFor(keyChoice.id)) {
+        setTimeout(() => {
+          openKeyChoice(keyChoice)
+        }, 500)
+      }
+
       archiveToGlobal()
       saveProgress()
       checkChapterProgress()
       checkGameComplete()
     }
+  }
+
+  function inspectItem(itemId) {
+    if (!itemInspectCount.value[itemId]) {
+      itemInspectCount.value[itemId] = 0
+    }
+    itemInspectCount.value[itemId]++
+
+    const hiddenItem = storyStore.checkHiddenItemUnlock(
+      itemId,
+      itemInspectCount.value[itemId],
+      timeStore.currentTimePeriod,
+      foundItems.value
+    )
+    if (hiddenItem && !foundHiddenItems.value.includes(hiddenItem.id)) {
+      foundHiddenItems.value.push(hiddenItem.id)
+      triggerMoodChange('touched')
+      archiveStore.recordHiddenItem(hiddenItem.id)
+      saveProgress()
+      return hiddenItem
+    }
+    return null
+  }
+
+  function isHiddenItemFound(hiId) {
+    return foundHiddenItems.value.includes(hiId)
+  }
+
+  function openKeyChoice(choice) {
+    currentKeyChoice.value = choice
+    showKeyChoiceModal.value = true
+    pauseGame()
+  }
+
+  function closeKeyChoice() {
+    showKeyChoiceModal.value = false
+    currentKeyChoice.value = null
+    resumeGame()
+  }
+
+  function makeChoice(choiceOptionId) {
+    const choice = currentKeyChoice.value
+    if (!choice) return null
+
+    const option = choice.options.find(o => o.id === choiceOptionId)
+    if (!option) return null
+
+    if (option.requiredEndingWeights) {
+      for (const [weight, required] of Object.entries(option.requiredEndingWeights)) {
+        if ((endingWeights.value[weight] || 0) < required) {
+          return { success: false, reason: '你还没有足够的心路历程来做出这个选择' }
+        }
+      }
+    }
+
+    madeChoices.value.push(choiceOptionId)
+
+    if (option.effects) {
+      if (option.effects.mood) {
+        triggerMoodChange(option.effects.mood > 0 ? 'warm' : 'sad')
+        moodStore.setMood(moodStore.moodValue + option.effects.mood)
+      }
+      if (option.effects.endingWeight) {
+        for (const [weight, value] of Object.entries(option.effects.endingWeight)) {
+          endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
+        }
+      }
+    }
+
+    keyChoiceResult.value = option
+    showKeyChoiceResult.value = true
+    saveProgress()
+
+    return { success: true, resultText: option.resultText }
+  }
+
+  function closeKeyChoiceResult() {
+    showKeyChoiceResult.value = false
+    keyChoiceResult.value = null
+    closeKeyChoice()
   }
 
   function showMemory(memory) {
@@ -422,6 +550,10 @@ export const useGameStore = defineStore('game', () => {
         craftedItems: [...craftedItems.value],
         unlockedHiddenMemories: [...unlockedHiddenMemories.value],
         currentChapterId: currentChapterId.value,
+        madeChoices: [...madeChoices.value],
+        endingWeights: { ...endingWeights.value },
+        foundHiddenItems: [...foundHiddenItems.value],
+        itemInspectCount: { ...itemInspectCount.value },
         moodData: moodStore.getSaveData(),
         timeData: timeStore.getSaveData()
       }
@@ -450,13 +582,28 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  function triggerFinalKeyChoiceIfReady() {
+    if (currentChapterId.value >= 5 && currentSceneId.value === 'lake' && !isChoiceMadeFor('kc_final')) {
+      const finalChoice = storyStore.getKeyChoiceById('kc_final')
+      if (finalChoice) {
+        setTimeout(() => {
+          openKeyChoice(finalChoice)
+        }, 1000)
+        return true
+      }
+    }
+    return false
+  }
+
   function checkGameComplete() {
     const allItemsFound = foundCount.value >= totalItems.value
     const allCrafted = craftedCount.value >= totalCraftable.value
     if (allItemsFound && allCrafted) {
-      setTimeout(() => {
-        endGame()
-      }, 2000)
+      if (!triggerFinalKeyChoiceIfReady()) {
+        setTimeout(() => {
+          endGame()
+        }, 2000)
+      }
     }
   }
 
@@ -467,14 +614,21 @@ export const useGameStore = defineStore('game', () => {
     }
 
     const timeUsed = 300 - timeRemaining.value
-    const ending = storyStore.getEndingData(
-      foundCount.value,
-      totalItems.value,
+    const ending = storyStore.getReunionEnding({
+      foundCount: foundCount.value,
+      totalItems: totalItems.value,
       timeUsed,
-      [...craftedItems.value],
-      currentChapterId.value,
-      moodStore.moodValue
-    )
+      craftedItems: [...craftedItems.value],
+      currentChapterId: currentChapterId.value,
+      moodValue: moodStore.moodValue,
+      triggeredMemoriesCount: triggeredMemories.value.length,
+      unlockedHMCount: unlockedHiddenMemories.value.length,
+      totalHMCount: storyStore.getAllHiddenMemories().length,
+      madeChoices: [...madeChoices.value],
+      endingWeights: { ...endingWeights.value },
+      foundHiddenItemsCount: foundHiddenItems.value.length,
+      totalHiddenItemsCount: totalHiddenItems.value
+    })
 
     archiveStore.recordEnding(ending)
     archiveToGlobal()
@@ -492,6 +646,10 @@ export const useGameStore = defineStore('game', () => {
         craftedItems: [...craftedItems.value],
         unlockedHiddenMemories: [...unlockedHiddenMemories.value],
         currentChapterId: currentChapterId.value,
+        madeChoices: [...madeChoices.value],
+        endingWeights: { ...endingWeights.value },
+        foundHiddenItems: [...foundHiddenItems.value],
+        itemInspectCount: { ...itemInspectCount.value },
         moodData: moodStore.getSaveData(),
         timeData: timeStore.getSaveData()
       }
@@ -512,6 +670,10 @@ export const useGameStore = defineStore('game', () => {
       craftedItems: [...craftedItems.value],
       unlockedHiddenMemories: [...unlockedHiddenMemories.value],
       currentChapterId: currentChapterId.value,
+      madeChoices: [...madeChoices.value],
+      endingWeights: { ...endingWeights.value },
+      foundHiddenItems: [...foundHiddenItems.value],
+      itemInspectCount: { ...itemInspectCount.value },
       moodData: moodStore.getSaveData(),
       timeData: timeStore.getSaveData()
     })
@@ -584,6 +746,19 @@ export const useGameStore = defineStore('game', () => {
     currentNarrationChapter,
     showChapterUnlockHint,
     unlockHintChapter,
+    madeChoices,
+    endingWeights,
+    foundHiddenItems,
+    itemInspectCount,
+    showKeyChoiceModal,
+    currentKeyChoice,
+    keyChoiceResult,
+    showKeyChoiceResult,
+    foundHiddenItemsCount,
+    totalHiddenItems,
+    dominantEndingWeights,
+    hasMadeChoice,
+    isChoiceMadeFor,
     moodStateName,
     moodStateColor,
     moodPercent,
@@ -628,6 +803,12 @@ export const useGameStore = defineStore('game', () => {
     resumeGame,
     changeScene,
     findItem,
+    inspectItem,
+    isHiddenItemFound,
+    openKeyChoice,
+    closeKeyChoice,
+    makeChoice,
+    closeKeyChoiceResult,
     closeMemory,
     openCrafting,
     closeCrafting,
@@ -653,6 +834,7 @@ export const useGameStore = defineStore('game', () => {
     isSceneAccessible,
     getCurrentSceneDescription,
     triggerMoodChange,
-    clearMoodChange
+    clearMoodChange,
+    triggerFinalKeyChoiceIfReady
   }
 })
