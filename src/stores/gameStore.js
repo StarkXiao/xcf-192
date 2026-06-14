@@ -6,6 +6,7 @@ import { useArchiveStore } from './archiveStore'
 import { useMoodStore } from './moodStore'
 import { useTimeStore } from './timeStore'
 import { useMusicStore } from './musicStore'
+import { useChallengeStore } from './challengeStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -50,6 +51,7 @@ export const useGameStore = defineStore('game', () => {
   const moodStore = useMoodStore()
   const timeStore = useTimeStore()
   const musicStore = useMusicStore()
+  const challengeStore = useChallengeStore()
 
   const moodStateName = computed(() => moodStore.moodStateName)
   const moodStateColor = computed(() => moodStore.moodStateColor)
@@ -208,6 +210,11 @@ export const useGameStore = defineStore('game', () => {
     return recentlyUnlockedFogItems.value.length > 0
   })
 
+  const isChallengeMode = computed(() => challengeStore.isChallengeMode)
+  const challengeBadgesCount = computed(() => challengeStore.unlockedBadgesCount)
+  const challengeStreak = computed(() => challengeStore.challengeStreak)
+  const todayDate = computed(() => challengeStore.todayDate)
+
   function checkChapterProgress() {
     const calculatedChapter = storyStore.getCurrentChapter(memoryProgressPercent.value)
     if (calculatedChapter && calculatedChapter.id > currentChapterId.value) {
@@ -318,6 +325,9 @@ export const useGameStore = defineStore('game', () => {
       if (savedGame.timeData) {
         timeStore.loadSaveData(savedGame.timeData)
       }
+      if (savedGame.challengeMode) {
+        challengeStore.startChallengeMode()
+      }
     } else {
       resetGame()
     }
@@ -336,6 +346,10 @@ export const useGameStore = defineStore('game', () => {
       dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral'
     })
 
+    if (challengeStore.isChallengeMode) {
+      challengeStore.recordSceneVisit(currentSceneId.value)
+    }
+
     if (!savedGame) {
       setTimeout(() => {
         currentNarrationChapter.value = storyStore.getChapterById(1)
@@ -343,6 +357,29 @@ export const useGameStore = defineStore('game', () => {
         pauseGame()
       }, 500)
     }
+  }
+
+  function startChallengeGame() {
+    resetGame()
+    challengeStore.startChallengeMode()
+    saveStore.saveGame({
+      currentSceneId: currentSceneId.value,
+      timeRemaining: timeRemaining.value,
+      foundItems: [...foundItems.value],
+      triggeredMemories: [...triggeredMemories.value],
+      craftedItems: [...craftedItems.value],
+      unlockedHiddenMemories: [...unlockedHiddenMemories.value],
+      currentChapterId: currentChapterId.value,
+      madeChoices: [...madeChoices.value],
+      endingWeights: { ...endingWeights.value },
+      foundHiddenItems: [...foundHiddenItems.value],
+      itemInspectCount: { ...itemInspectCount.value },
+      triggeredFakeClues: [...triggeredFakeClues.value],
+      moodData: moodStore.getSaveData(),
+      timeData: timeStore.getSaveData(),
+      challengeMode: true
+    })
+    startGame()
   }
 
   function startGameFromBranch(branchId) {
@@ -409,6 +446,7 @@ export const useGameStore = defineStore('game', () => {
     showFakeClueModal.value = false
     currentFakeClue.value = null
     recentlyUnlockedFogItems.value = []
+    challengeStore.exitChallengeMode()
     moodStore.resetMood()
     timeStore.resetTime()
     saveStore.clearSave()
@@ -442,6 +480,9 @@ export const useGameStore = defineStore('game', () => {
   function changeScene(sceneId) {
     if (storyStore.getSceneById(sceneId)) {
       currentSceneId.value = sceneId
+      if (challengeStore.isChallengeMode) {
+        challengeStore.recordSceneVisit(sceneId)
+      }
       musicStore.updateContext({ sceneId })
       saveProgress()
       triggerFinalKeyChoiceIfReady()
@@ -836,6 +877,30 @@ export const useGameStore = defineStore('game', () => {
     archiveStore.recordEnding(ending)
     archiveToGlobal()
 
+    if (challengeStore.isChallengeMode) {
+      challengeStore.updateStreak()
+      
+      const result = {
+        foundCount: foundCount.value,
+        totalItems: totalItems.value,
+        timeUsed,
+        craftedCount: craftedCount.value,
+        totalCraftable: totalCraftable.value,
+        unlockedHMCount: unlockedHiddenMemories.value.length,
+        totalHMCount: storyStore.getAllHiddenMemories().length,
+        foundHiddenItemsCount: foundHiddenItems.value.length,
+        totalHiddenItemsCount: totalHiddenItems.value,
+        endingType: ending.type,
+        moodValue: moodStore.moodValue
+      }
+      
+      result.score = challengeStore.calculateChallengeScore(result)
+      const lbResult = challengeStore.submitToLeaderboard(result)
+      result.rank = lbResult.rank
+      
+      challengeStore.checkAndUnlockBadges(result)
+    }
+
     const endingLabel = ending?.isSpecial
       ? `达成「${ending.title}」`
       : `抵达结局：${ending?.title || '未知'}`
@@ -881,7 +946,8 @@ export const useGameStore = defineStore('game', () => {
       itemInspectCount: { ...itemInspectCount.value },
       triggeredFakeClues: [...triggeredFakeClues.value],
       moodData: moodStore.getSaveData(),
-      timeData: timeStore.getSaveData()
+      timeData: timeStore.getSaveData(),
+      challengeMode: challengeStore.isChallengeMode
     })
   }
 
@@ -1012,8 +1078,13 @@ export const useGameStore = defineStore('game', () => {
     timeProgress,
     combinedAtmosphere,
     visibleItemsForCurrentScene,
+    isChallengeMode,
+    challengeBadgesCount,
+    challengeStreak,
+    todayDate,
     startGame,
     startGameFromBranch,
+    startChallengeGame,
     resetGame,
     pauseGame,
     resumeGame,

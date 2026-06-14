@@ -53,9 +53,14 @@
         <Timer />
       </div>
       <div class="header-center">
-        <div class="progress-bar">
+        <div class="progress-bar" :class="{ 'challenge-mode': isChallengeMode }">
           <div class="progress-fill" :style="{ width: totalProgress + '%' }"></div>
           <span class="progress-text">{{ foundCount }}/{{ totalItems }} · 合成 {{ craftedCount }}/{{ totalCraftable }}</span>
+        </div>
+        <div v-if="isChallengeMode" class="challenge-mode-indicator">
+          <span class="cmi-icon">🎯</span>
+          <span class="cmi-text">纪念日挑战</span>
+          <span class="cmi-date">{{ todayDate }}</span>
         </div>
       </div>
       <div class="header-right">
@@ -104,7 +109,8 @@
               found: isItemFound(item.id), 
               'item-glow': !isItemFound(item.id),
               'fog-hidden': isItemFogHidden(item.id),
-              'fog-reveal': isFogRevealed(item.id)
+              'fog-reveal': isFogRevealed(item.id),
+              'challenge-item': isChallengeMode && !isItemFound(item.id)
             }"
             :style="{
               left: item.position.x + '%',
@@ -117,10 +123,23 @@
               '--fog-density': getFogDensity(item.id)
             }"
             @click="handleItemClick(item)"
+            @mouseenter="handleItemHover(item.id, true)"
+            @mouseleave="handleItemHover(item.id, false)"
           >
             <span class="item-icon">{{ item.icon }}</span>
-            <span v-if="!isItemFound(item.id)" class="item-hint">?</span>
+            <span v-if="!isItemFound(item.id)" class="item-hint" :title="getItemChallengeHint(item.id)">
+              {{ isChallengeMode ? '✨' : '?' }}
+            </span>
             <div v-if="isItemFogHidden(item.id)" class="item-fog-overlay"></div>
+            <Transition name="hint-tooltip">
+              <div 
+                v-if="isChallengeMode && !isItemFound(item.id) && hoveredItemId === item.id" 
+                class="challenge-hint-tooltip"
+              >
+                <span class="cht-icon">💡</span>
+                <span class="cht-text">{{ getItemChallengeHint(item.id) }}</span>
+              </div>
+            </Transition>
           </div>
 
           <div
@@ -328,6 +347,7 @@
 import { ref, computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { useStoryStore } from '../stores/storyStore'
+import { useChallengeStore } from '../stores/challengeStore'
 import Timer from './Timer.vue'
 import MemoryModal from './MemoryModal.vue'
 import CraftingModal from './CraftingModal.vue'
@@ -335,11 +355,15 @@ import ChapterNarration from './ChapterNarration.vue'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
+const challengeStore = useChallengeStore()
 
 const showMenu = ref(false)
 const foundMessage = ref(null)
+const hoveredItemId = ref(null)
 
 const currentSceneId = computed(() => gameStore.currentSceneId)
+const isChallengeMode = computed(() => gameStore.isChallengeMode)
+const todayDate = computed(() => gameStore.todayDate)
 const currentScene = computed(() => gameStore.currentScene)
 const progress = computed(() => gameStore.progress)
 const totalProgress = computed(() => gameStore.totalProgress)
@@ -458,6 +482,22 @@ function handleItemClick(item) {
     gameStore.findItem(item.id)
     showFoundMessage(item)
   }
+  hoveredItemId.value = null
+}
+
+function handleItemHover(itemId, isEnter) {
+  if (isEnter && !isItemFound(itemId)) {
+    hoveredItemId.value = itemId
+  } else if (!isEnter && hoveredItemId.value === itemId) {
+    hoveredItemId.value = null
+  }
+}
+
+function getItemChallengeHint(itemId) {
+  const hint = storyStore.getChallengeHint(itemId)
+  if (hint) return hint
+  const item = storyStore.getItemById(itemId)
+  return item?.hint || '仔细观察周围...'
 }
 
 function handleFakeClueClick(fakeClue) {
@@ -1855,5 +1895,125 @@ function getStarStyle(index) {
   background: linear-gradient(135deg, rgba(200, 100, 100, 0.4), rgba(150, 80, 80, 0.3));
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(200, 100, 100, 0.3);
+}
+
+.challenge-mode-indicator {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.2), rgba(255, 215, 0, 0.15));
+  border-radius: 12px;
+  border: 1px solid rgba(212, 165, 116, 0.4);
+  animation: challengePulse 2s ease-in-out infinite;
+}
+
+.cmi-icon {
+  font-size: 0.9rem;
+}
+
+.cmi-text {
+  color: #d4a574;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05rem;
+}
+
+.cmi-date {
+  color: #e8c89a;
+  font-size: 0.68rem;
+  font-family: monospace;
+  padding-left: 4px;
+  border-left: 1px solid rgba(212, 165, 116, 0.3);
+}
+
+@keyframes challengePulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(212, 165, 116, 0.2); }
+  50% { box-shadow: 0 0 16px rgba(255, 215, 0, 0.3); }
+}
+
+.progress-bar.challenge-mode {
+  background: linear-gradient(90deg, rgba(30, 20, 10, 0.6), rgba(50, 35, 15, 0.6));
+  border-color: rgba(212, 165, 116, 0.3);
+}
+
+.progress-bar.challenge-mode .progress-fill {
+  background: linear-gradient(90deg, #d4a574, #ffd700, #ff8c00);
+}
+
+.scene-item.challenge-item {
+  border-color: rgba(255, 215, 0, 0.3);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.scene-item.challenge-item:hover {
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.scene-item.challenge-item .item-hint {
+  background: linear-gradient(135deg, #d4a574, #ffd700);
+  animation: challengeHintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes challengeHintPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(255, 215, 0, 0.5); }
+  50% { transform: scale(1.1); box-shadow: 0 0 12px rgba(255, 215, 0, 0.8); }
+}
+
+.challenge-hint-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 180px;
+  max-width: 250px;
+  padding: 10px 14px;
+  background: linear-gradient(145deg, rgba(30, 25, 15, 0.98), rgba(50, 35, 20, 0.98));
+  border-radius: 12px;
+  border: 1px solid rgba(212, 165, 116, 0.5);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 165, 116, 0.2);
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.challenge-hint-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: rgba(212, 165, 116, 0.5);
+}
+
+.cht-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cht-text {
+  color: #e8d8c0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  font-style: italic;
+  text-align: left;
+}
+
+.hint-tooltip-enter-active,
+.hint-tooltip-leave-active {
+  transition: all 0.2s ease;
+}
+
+.hint-tooltip-enter-from,
+.hint-tooltip-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(5px);
 }
 </style>

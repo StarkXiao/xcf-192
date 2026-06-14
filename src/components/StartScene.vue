@@ -25,6 +25,25 @@
         </ul>
       </div>
 
+      <div class="challenge-banner" v-if="todayDate">
+        <div class="challenge-banner-header">
+          <span class="cb-icon">🎯</span>
+          <span class="cb-title">纪念日挑战</span>
+          <span class="cb-date">{{ todayDate }}</span>
+        </div>
+        <div class="challenge-banner-body">
+          <p class="cb-desc">每日随机物品位置与神秘提示文案，挑战你的观察力！</p>
+          <div class="cb-stats">
+            <span v-if="challengeStreak > 0" class="cb-stat">
+              🔥 连续 {{ challengeStreak }} 天
+            </span>
+            <span class="cb-stat">
+              🎖️ {{ badgesCount }}/{{ totalBadges }} 徽章
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div class="start-buttons">
         <button v-if="hasSave" class="btn btn-secondary" @click="continueGame">
           继续游戏
@@ -35,12 +54,23 @@
         <button v-else class="btn btn-primary" @click="startNewGame">
           开始游戏
         </button>
-        <button v-if="hasArchive" class="btn btn-archive" @click="openArchive">
-          📖 回忆档案 ({{ archiveSummary }})
+        <button class="btn btn-challenge" @click="startChallenge">
+          🎯 纪念日挑战模式
         </button>
+        <div class="btn-row">
+          <button v-if="hasArchive" class="btn btn-archive half-btn" @click="openArchive">
+            📖 回忆档案 ({{ archiveSummary }})
+          </button>
+          <button class="btn btn-leaderboard half-btn" @click="openLeaderboard">
+            🏆 排行榜
+          </button>
+          <button class="btn btn-badges half-btn" @click="openBadges">
+            🎖️ 徽章 ({{ badgesCount }})
+          </button>
+        </div>
       </div>
 
-      <div class="version-info">v1.1.0 | 雾城工作室</div>
+      <div class="version-info">v1.2.0 纪念日挑战版 | 雾城工作室</div>
     </div>
   </div>
 </template>
@@ -50,10 +80,12 @@ import { computed, onMounted } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { useSaveStore } from '../stores/saveStore'
 import { useArchiveStore } from '../stores/archiveStore'
+import { useChallengeStore } from '../stores/challengeStore'
 
 const gameStore = useGameStore()
 const saveStore = useSaveStore()
 const archiveStore = useArchiveStore()
+const challengeStore = useChallengeStore()
 
 const hasSave = saveStore.hasSave
 
@@ -70,9 +102,15 @@ const archiveSummary = computed(() => {
   return parts.length > 0 ? parts.join('/') : ''
 })
 
+const todayDate = computed(() => challengeStore.todayDate)
+const challengeStreak = computed(() => challengeStore.challengeStreak)
+const badgesCount = computed(() => challengeStore.unlockedBadgesCount)
+const totalBadges = computed(() => challengeStore.totalBadgesCount)
+
 onMounted(() => {
   saveStore.checkHasSave()
   archiveStore.init()
+  challengeStore.init()
 })
 
 function startNewGame() {
@@ -91,8 +129,22 @@ function newGame() {
   }
 }
 
+function startChallenge() {
+  if (confirm('纪念日挑战模式：每日物品位置随机、提示文案神秘化。确定开始挑战？')) {
+    gameStore.startChallengeGame()
+  }
+}
+
 function openArchive() {
   gameStore.openArchive()
+}
+
+function openLeaderboard() {
+  challengeStore.openLeaderboard()
+}
+
+function openBadges() {
+  challengeStore.openBadges()
 }
 </script>
 
@@ -170,7 +222,7 @@ function openArchive() {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 1.2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   text-align: left;
 }
 
@@ -195,11 +247,96 @@ function openArchive() {
   line-height: 1.6;
 }
 
+.challenge-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  animation: bannerGlow 3s ease-in-out infinite;
+}
+
+@keyframes bannerGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.25); }
+}
+
+.challenge-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cb-icon {
+  font-size: 1.3rem;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(10deg); }
+}
+
+.cb-title {
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 3vw, 1.05rem);
+  letter-spacing: 0.1rem;
+}
+
+.cb-date {
+  color: #a0a0b0;
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+}
+
+.challenge-banner-body {
+  text-align: center;
+}
+
+.cb-desc {
+  color: #d4c4a8;
+  font-size: clamp(0.8rem, 2.3vw, 0.9rem);
+  margin: 0 0 0.6rem 0;
+  line-height: 1.5;
+}
+
+.cb-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cb-stat {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.3rem 0.7rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  color: #e8e8f0;
+}
+
 .start-buttons {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
   margin-bottom: 1.5rem;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.half-btn {
+  flex: 1;
+  min-width: calc(50% - 0.3rem);
 }
 
 .btn {
@@ -246,6 +383,22 @@ function openArchive() {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+.btn-challenge {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  animation: challengePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes challengePulse {
+  0%, 100% { box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 4px 25px rgba(245, 158, 11, 0.6), 0 0 30px rgba(239, 68, 68, 0.3); }
+}
+
+.btn-challenge:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
 .btn-archive {
   background: linear-gradient(135deg, rgba(212, 165, 116, 0.3), rgba(212, 165, 116, 0.15));
   border: 1px solid rgba(212, 165, 116, 0.4);
@@ -255,6 +408,30 @@ function openArchive() {
 .btn-archive:hover {
   background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.25));
   box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-leaderboard {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(217, 119, 6, 0.2));
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fde68a;
+}
+
+.btn-leaderboard:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.5), rgba(217, 119, 6, 0.3));
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-badges {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(109, 40, 217, 0.2));
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #ddd6fe;
+}
+
+.btn-badges:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(109, 40, 217, 0.3));
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
   transform: translateY(-2px);
 }
 

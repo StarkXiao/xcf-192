@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters, keyChoices, hiddenItems, reunionEndings, endingWeightLabels, fakeClues, fogHiddenItems } from '../data/storyData'
 import { ENDING_MOOD_THRESHOLDS } from './moodStore'
+import { useChallengeStore } from './challengeStore'
 
 export const EFFICIENCY_LEVELS = {
   PERFECT: 'perfect',
@@ -11,7 +13,93 @@ export const EFFICIENCY_LEVELS = {
 }
 
 export const useStoryStore = defineStore('story', () => {
+  const randomizedSceneCache = ref({})
+  const randomizedItemsCache = ref({})
+
+  function getChallengeStore() {
+    try {
+      return useChallengeStore()
+    } catch (e) {
+      return null
+    }
+  }
+
+  function isChallengeActive() {
+    const cs = getChallengeStore()
+    return cs ? cs.isChallengeMode : false
+  }
+
+  function seededRandom(seed) {
+    let s = seed
+    return function() {
+      s = (s * 9301 + 49297) % 233280
+      return s / 233280
+    }
+  }
+
+  function randomizeItemPositions(sceneId, items, seed) {
+    const random = seededRandom(seed + sceneId.length)
+    const positions = items.map(item => ({ ...item.position }))
+    
+    const shuffleCount = Math.max(1, Math.floor(positions.length * 0.5))
+    for (let i = 0; i < shuffleCount; i++) {
+      const idx1 = Math.floor(random() * positions.length)
+      let idx2 = Math.floor(random() * positions.length)
+      while (idx2 === idx1) {
+        idx2 = Math.floor(random() * positions.length)
+      }
+      const tempX = positions[idx1].x
+      const tempY = positions[idx1].y
+      positions[idx1].x = positions[idx2].x
+      positions[idx1].y = positions[idx2].y
+      positions[idx2].x = tempX
+      positions[idx2].y = tempY
+    }
+    
+    for (let i = 0; i < positions.length; i++) {
+      if (random() < 0.4) {
+        positions[i].x = Math.max(5, Math.min(85, positions[i].x + (random() - 0.5) * 15))
+        positions[i].y = Math.max(20, Math.min(80, positions[i].y + (random() - 0.5) * 15))
+      }
+    }
+    
+    return items.map((item, idx) => ({
+      ...item,
+      position: {
+        x: Math.round(positions[idx].x * 10) / 10,
+        y: Math.round(positions[idx].y * 10) / 10
+      }
+    }))
+  }
+
+  function getRandomizedScene(sceneId, seed) {
+    const cacheKey = `${sceneId}_${seed}`
+    if (randomizedSceneCache.value[cacheKey]) {
+      return randomizedSceneCache.value[cacheKey]
+    }
+
+    const scene = scenes.find(s => s.id === sceneId)
+    if (!scene) return null
+
+    if (!seed) {
+      return scene
+    }
+
+    const randomizedItems = randomizeItemPositions(sceneId, scene.items, seed)
+    const randomizedScene = {
+      ...scene,
+      items: randomizedItems
+    }
+    
+    randomizedSceneCache.value[cacheKey] = randomizedScene
+    return randomizedScene
+  }
+
   function getSceneById(sceneId) {
+    const cs = getChallengeStore()
+    if (cs && cs.isChallengeMode && cs.currentDailySeed) {
+      return getRandomizedScene(sceneId, cs.currentDailySeed)
+    }
     return scenes.find(scene => scene.id === sceneId)
   }
 
@@ -26,11 +114,22 @@ export const useStoryStore = defineStore('story', () => {
   }
 
   function getItemById(itemId) {
-    for (const scene of scenes) {
+    const cs = getChallengeStore()
+    let sceneList = scenes
+    if (cs && cs.isChallengeMode && cs.currentDailySeed) {
+      sceneList = scenes.map(s => getRandomizedScene(s.id, cs.currentDailySeed)).filter(Boolean)
+    }
+    for (const scene of sceneList) {
       const item = scene.items.find(i => i.id === itemId)
       if (item) return item
     }
     return null
+  }
+
+  function getChallengeHint(itemId) {
+    const cs = getChallengeStore()
+    if (!cs || !cs.isChallengeMode) return null
+    return cs.getChallengeHint(itemId)
   }
 
   function getMemoryByItemId(itemId) {
@@ -642,6 +741,9 @@ export const useStoryStore = defineStore('story', () => {
     getFogHiddenItems,
     getFogHiddenItemByItemId,
     getFogHiddenItemsBySceneId,
-    checkFogItemUnlock
+    checkFogItemUnlock,
+    getChallengeHint,
+    getRandomizedScene,
+    isChallengeActive
   }
 })

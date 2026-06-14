@@ -260,6 +260,82 @@
             </div>
           </div>
 
+          <div class="challenge-result-section" v-if="isChallengeMode">
+            <div class="challenge-header">
+              <span class="challenge-icon-big">🎯</span>
+              <div class="challenge-title-wrap">
+                <h3 class="challenge-title">纪念日挑战完成！</h3>
+                <p class="challenge-date">{{ challengeDate }}</p>
+              </div>
+            </div>
+
+            <div class="challenge-score-card" :class="getRankClass(challengeRank)">
+              <div class="score-main">
+                <span class="score-label">挑战得分</span>
+                <span class="score-value">{{ challengeScore }}</span>
+                <span v-if="challengeRank" class="score-rank-badge">
+                  <span class="rank-icon">{{ getRankInfo(challengeRank).icon }}</span>
+                  <span class="rank-text">第 {{ challengeRank }} 名</span>
+                </span>
+              </div>
+              <div class="score-breakdown">
+                <div class="score-item">
+                  <span class="si-icon">💎</span>
+                  <span class="si-label">找物</span>
+                  <span class="si-value">{{ foundCount }}/{{ totalItems }}</span>
+                </div>
+                <div class="score-item">
+                  <span class="si-icon">⏱️</span>
+                  <span class="si-label">用时</span>
+                  <span class="si-value">{{ formattedTimeUsed }}</span>
+                </div>
+                <div class="score-item">
+                  <span class="si-icon">✨</span>
+                  <span class="si-label">合成</span>
+                  <span class="si-value">{{ craftedCount }}/{{ totalCraftable }}</span>
+                </div>
+                <div class="score-item">
+                  <span class="si-icon">💭</span>
+                  <span class="si-label">心绪</span>
+                  <span class="si-value" :style="{ color: getMoodColor(finalMoodValue) }">{{ finalMoodValue }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="newly-unlocked-badges" v-if="newlyUnlockedBadges.length > 0">
+              <h4 class="nub-title">
+                <span class="nub-icon">🎉</span>
+                获得新徽章！
+              </h4>
+              <div class="nub-grid">
+                <div
+                  v-for="badge in newlyUnlockedBadges"
+                  :key="badge.id"
+                  class="nub-card"
+                  :class="`nub-rarity-${badge.rarity}`"
+                >
+                  <span class="nub-card-icon">{{ badge.icon }}</span>
+                  <span class="nub-card-name">{{ badge.name }}</span>
+                  <span class="nub-card-desc">{{ badge.description }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="challenge-streak-info" v-if="challengeStreak > 0">
+              <span class="streak-icon">🔥</span>
+              <span class="streak-text">已连续挑战 <strong>{{ challengeStreak }}</strong> 天！</span>
+            </div>
+
+            <div class="challenge-quick-buttons">
+              <button class="btn btn-outline half-btn" @click="openLeaderboardFromEnd">
+                🏆 查看排行榜
+              </button>
+              <button class="btn btn-outline half-btn" @click="openBadgesFromEnd">
+                🎖️ 所有徽章 ({{ unlockedBadgesCount }}/{{ totalBadgesCount }})
+              </button>
+            </div>
+          </div>
+
           <div class="archive-hint" v-if="archiveEndings > 0">
             <span class="hint-icon">📖</span>
             跨周目已解锁 {{ archiveEndings }} 个结局、{{ archiveHM }} 个隐藏回忆
@@ -316,11 +392,13 @@ import { useGameStore } from '../stores/gameStore'
 import { useStoryStore } from '../stores/storyStore'
 import { useArchiveStore } from '../stores/archiveStore'
 import { useTimeStore, GAME_START_HOUR, GAME_TOTAL_HOURS } from '../stores/timeStore'
+import { useChallengeStore, CHALLENGE_BADGES } from '../stores/challengeStore'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
 const archiveStore = useArchiveStore()
 const timeStore = useTimeStore()
+const challengeStore = useChallengeStore()
 
 const showIntro = ref(true)
 
@@ -651,6 +729,63 @@ function playAgain() {
 function returnHome() {
   gameStore.resetGame()
   gameStore.returnToStart()
+}
+
+const isChallengeMode = computed(() => challengeStore.isChallengeMode)
+const challengeDate = computed(() => challengeStore.todayDate || new Date().toLocaleDateString('zh-CN'))
+const challengeStreak = computed(() => challengeStore.challengeStreak)
+const unlockedBadgesCount = computed(() => challengeStore.unlockedBadgesCount)
+const totalBadgesCount = computed(() => challengeStore.totalBadgesCount)
+
+const challengeScore = computed(() => {
+  if (!isChallengeMode.value) return 0
+  const result = {
+    foundCount: foundCount.value,
+    totalItems: totalItems.value,
+    timeUsed: timeUsed.value,
+    craftedCount: craftedCount.value,
+    totalCraftable: totalCraftable.value,
+    unlockedHMCount: unlockedHM.value,
+    totalHMCount: totalHM.value,
+    foundHiddenItemsCount: hiddenItemsCount.value,
+    totalHiddenItemsCount: totalHiddenItemsCount.value,
+    endingType: endingType.value,
+    moodValue: finalMoodValue.value
+  }
+  return challengeStore.calculateChallengeScore(result)
+})
+
+const challengeRank = computed(() => {
+  if (!isChallengeMode.value) return null
+  const sortedLb = [...challengeStore.leaderboard].sort((a, b) => b.score - a.score)
+  const idx = sortedLb.findIndex(e => e.timestamp && Date.now() - e.timestamp < 5000)
+  return idx >= 0 ? idx + 1 : sortedLb.length + 1
+})
+
+const newlyUnlockedBadges = computed(() => {
+  if (!challengeStore.newlyUnlockedBadge) return []
+  return [challengeStore.newlyUnlockedBadge]
+})
+
+function getRankClass(rank) {
+  if (!rank) return 'rank-normal'
+  if (rank === 1) return 'rank-gold'
+  if (rank === 2) return 'rank-silver'
+  if (rank === 3) return 'rank-bronze'
+  if (rank <= 10) return 'rank-top10'
+  return 'rank-normal'
+}
+
+function getRankInfo(rank) {
+  return challengeStore.getRankBadge(rank)
+}
+
+function openLeaderboardFromEnd() {
+  challengeStore.openLeaderboard()
+}
+
+function openBadgesFromEnd() {
+  challengeStore.openBadges()
 }
 </script>
 
@@ -1815,5 +1950,293 @@ function returnHome() {
 .end-scene.special .ending-title,
 .end-scene.special .ending-description {
   text-shadow: 0 2px 20px rgba(96, 165, 250, 0.3);
+}
+
+.challenge-result-section {
+  background: linear-gradient(145deg, rgba(50, 35, 20, 0.5), rgba(30, 25, 15, 0.6));
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(212, 165, 116, 0.3);
+}
+
+.challenge-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(212, 165, 116, 0.2);
+}
+
+.challenge-icon-big {
+  font-size: 2.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.challenge-title-wrap {
+  text-align: left;
+  flex: 1;
+}
+
+.challenge-title {
+  margin: 0;
+  color: #d4a574;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 0.1rem;
+}
+
+.challenge-date {
+  margin: 0.3rem 0 0 0;
+  color: #8a8070;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.challenge-score-card {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+}
+
+.challenge-score-card.rank-gold {
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05));
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
+}
+
+.challenge-score-card.rank-silver {
+  background: linear-gradient(145deg, rgba(192, 192, 192, 0.1), rgba(160, 160, 160, 0.05));
+  border-color: rgba(192, 192, 192, 0.35);
+  box-shadow: 0 0 20px rgba(192, 192, 192, 0.1);
+}
+
+.challenge-score-card.rank-bronze {
+  background: linear-gradient(145deg, rgba(205, 127, 50, 0.1), rgba(180, 100, 40, 0.05));
+  border-color: rgba(205, 127, 50, 0.35);
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.1);
+}
+
+.challenge-score-card.rank-top10 {
+  background: linear-gradient(145deg, rgba(129, 140, 248, 0.08), rgba(96, 165, 250, 0.04));
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.score-main {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.score-label {
+  display: block;
+  color: #8a8070;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.1rem;
+}
+
+.score-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #d4a574, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.1rem;
+}
+
+.score-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rank-icon {
+  font-size: 1rem;
+}
+
+.rank-text {
+  color: #e8e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.score-breakdown {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.si-icon {
+  font-size: 1.1rem;
+}
+
+.si-label {
+  color: #8a8070;
+  font-size: 0.72rem;
+}
+
+.si-value {
+  color: #e8e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.newly-unlocked-badges {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 215, 0, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  animation: badgeUnlockGlow 2s ease-in-out infinite;
+}
+
+@keyframes badgeUnlockGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.25); }
+}
+
+.nub-title {
+  margin: 0 0 0.8rem 0;
+  color: #ffd700;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.nub-icon {
+  font-size: 1.2rem;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.nub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.8rem;
+}
+
+.nub-card {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 0.8rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  animation: badgePopIn 0.5s ease-out;
+}
+
+@keyframes badgePopIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.nub-card.nub-rarity-legendary {
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.08));
+  border-color: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.nub-card.nub-rarity-epic {
+  background: linear-gradient(145deg, rgba(192, 132, 252, 0.12), rgba(167, 139, 250, 0.06));
+  border-color: rgba(192, 132, 252, 0.4);
+  box-shadow: 0 0 15px rgba(192, 132, 252, 0.15);
+}
+
+.nub-card.nub-rarity-rare {
+  background: linear-gradient(145deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05));
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.nub-card-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+}
+
+.nub-card-name {
+  color: #e8e8f0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.nub-rarity-legendary .nub-card-name { color: #ffd700; }
+.nub-rarity-epic .nub-card-name { color: #c084fc; }
+.nub-rarity-rare .nub-card-name { color: #60a5fa; }
+
+.nub-card-desc {
+  color: #8a8a9a;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.challenge-streak-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08), rgba(249, 115, 22, 0.08));
+  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.streak-icon {
+  font-size: 1.3rem;
+  animation: fireShake 0.5s ease-in-out infinite;
+}
+
+@keyframes fireShake {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.streak-text {
+  color: #e8e8f0;
+  font-size: 0.9rem;
+}
+
+.streak-text strong {
+  color: #f97316;
+  font-size: 1.1rem;
+}
+
+.challenge-quick-buttons {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.half-btn {
+  flex: 1;
 }
 </style>
