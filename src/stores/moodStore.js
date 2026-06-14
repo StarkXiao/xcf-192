@@ -30,11 +30,11 @@ export const MOOD_STATES = [
 ]
 
 export const MUSIC_LAYERS = {
-  despair: { volume: 0.15, playbackRate: 0.85, filter: 'lowpass(800)' },
-  gloomy: { volume: 0.25, playbackRate: 0.92, filter: 'lowpass(1200)' },
-  calm: { volume: 0.35, playbackRate: 1.0, filter: 'none' },
-  warm: { volume: 0.45, playbackRate: 1.05, filter: 'highpass(200)' },
-  hopeful: { volume: 0.55, playbackRate: 1.1, filter: 'highpass(400)' }
+  despair: { volume: 0.15, playbackRate: 0.85, filter: 'lowpass(800)', filterFreq: 400, detune: -50, harmonicInterval: 3, padGain: 0.6, brightness: 0.1, chordIntervals: [0, 3, 7, 10] },
+  gloomy: { volume: 0.25, playbackRate: 0.92, filter: 'lowpass(1200)', filterFreq: 700, detune: -20, harmonicInterval: 2, padGain: 0.7, brightness: 0.25, chordIntervals: [0, 3, 7, 12] },
+  calm: { volume: 0.35, playbackRate: 1.0, filter: 'none', filterFreq: 1500, detune: 0, harmonicInterval: 0, padGain: 0.8, brightness: 0.5, chordIntervals: [0, 4, 7, 12] },
+  warm: { volume: 0.45, playbackRate: 1.05, filter: 'highpass(200)', filterFreq: 2500, detune: 10, harmonicInterval: -2, padGain: 0.9, brightness: 0.7, chordIntervals: [0, 4, 7, 11] },
+  hopeful: { volume: 0.55, playbackRate: 1.1, filter: 'highpass(400)', filterFreq: 4000, detune: 20, harmonicInterval: -3, padGain: 1.0, brightness: 0.9, chordIntervals: [0, 4, 7, 11, 16] }
 }
 
 export const TEXT_TONE_MODIFIERS = {

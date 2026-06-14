@@ -5,6 +5,7 @@ import { useSaveStore } from './saveStore'
 import { useArchiveStore } from './archiveStore'
 import { useMoodStore } from './moodStore'
 import { useTimeStore } from './timeStore'
+import { useMusicStore } from './musicStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -48,6 +49,7 @@ export const useGameStore = defineStore('game', () => {
   const archiveStore = useArchiveStore()
   const moodStore = useMoodStore()
   const timeStore = useTimeStore()
+  const musicStore = useMusicStore()
 
   const moodStateName = computed(() => moodStore.moodStateName)
   const moodStateColor = computed(() => moodStore.moodStateColor)
@@ -57,6 +59,7 @@ export const useGameStore = defineStore('game', () => {
   const musicLayer = computed(() => moodStore.musicLayer)
   const textTone = computed(() => moodStore.textTone)
   const hintIntensity = computed(() => moodStore.hintIntensity)
+  const combinedMusicContext = computed(() => musicStore.musicContext)
   const lastMoodChange = ref(null)
   const showMoodChange = ref(false)
 
@@ -217,6 +220,7 @@ export const useGameStore = defineStore('game', () => {
     if (result) {
       lastMoodChange.value = result
       showMoodChange.value = true
+      musicStore.updateContext({ moodStateId: moodStore.moodStateId })
       setTimeout(() => {
         showMoodChange.value = false
       }, 2000)
@@ -234,6 +238,7 @@ export const useGameStore = defineStore('game', () => {
     if (!chapter) return
 
     currentChapterId.value = newChapterId
+    musicStore.updateContext({ chapterId: newChapterId })
 
     unlockHintChapter.value = chapter
     showChapterUnlockHint.value = true
@@ -314,6 +319,16 @@ export const useGameStore = defineStore('game', () => {
     gameState.value = 'playing'
     startTimer()
     timeStore.startTimeFlow()
+
+    musicStore.updateContext({
+      gameState: 'playing',
+      sceneId: currentSceneId.value,
+      timeRemaining: timeRemaining.value,
+      moodStateId: moodStore.moodStateId,
+      timePeriod: timeStore.currentTimePeriod,
+      chapterId: currentChapterId.value,
+      memoryProgress: memoryProgressPercent.value
+    })
 
     if (!savedGame) {
       setTimeout(() => {
@@ -421,6 +436,7 @@ export const useGameStore = defineStore('game', () => {
   function changeScene(sceneId) {
     if (storyStore.getSceneById(sceneId)) {
       currentSceneId.value = sceneId
+      musicStore.updateContext({ sceneId })
       saveProgress()
       triggerFinalKeyChoiceIfReady()
     }
@@ -618,6 +634,7 @@ export const useGameStore = defineStore('game', () => {
         for (const [weight, value] of Object.entries(option.effects.endingWeight)) {
           endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
         }
+        musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
       }
     }
 
@@ -834,6 +851,7 @@ export const useGameStore = defineStore('game', () => {
     timeStore.stopTimeFlow()
     saveStore.clearSave()
 
+    musicStore.updateContext({ gameState: 'end' })
     gameState.value = 'end'
   }
 
@@ -862,6 +880,7 @@ export const useGameStore = defineStore('game', () => {
       timerInterval.value = null
     }
     timeStore.stopTimeFlow()
+    musicStore.updateContext({ gameState: 'start' })
     gameState.value = 'start'
   }
 
@@ -952,6 +971,7 @@ export const useGameStore = defineStore('game', () => {
     musicLayer,
     textTone,
     hintIntensity,
+    combinedMusicContext,
     lastMoodChange,
     showMoodChange,
     totalItems,
