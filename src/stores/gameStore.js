@@ -8,6 +8,7 @@ import { useTimeStore } from './timeStore'
 import { useMusicStore } from './musicStore'
 import { useChallengeStore } from './challengeStore'
 import { useLetterStore } from './letterStore'
+import { useCollectionStore } from './collectionStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -57,6 +58,7 @@ export const useGameStore = defineStore('game', () => {
   const musicStore = useMusicStore()
   const challengeStore = useChallengeStore()
   const letterStore = useLetterStore()
+  const collectionStore = useCollectionStore()
 
   function initLetterCallbacks() {
     letterStore.setMoodCallback((emotion) => {
@@ -518,6 +520,8 @@ export const useGameStore = defineStore('game', () => {
       foundItems.value.push(itemId)
       const period = timeStore.currentTimePeriod
       archiveStore.recordTimePeriodStat(period, 'item')
+      
+      collectionStore.unlockRelicByBaseItem(itemId)
       
       const memory = storyStore.getMemoryByItemId(itemId)
       if (memory && !triggeredMemories.value.includes(memory.id)) {

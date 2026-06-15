@@ -17,6 +17,7 @@
     <MemoryTheater />
     <JournalEditor />
     <LetterSystemModal />
+    <CollectionRoom />
   </div>
 </template>
 
@@ -40,6 +41,7 @@ import BadgeModal from './components/BadgeModal.vue'
 import MemoryArchiveModal from './components/MemoryArchiveModal.vue'
 import MemoryTheater from './components/MemoryTheater.vue'
 import LetterSystemModal from './components/LetterSystemModal.vue'
+import CollectionRoom from './components/CollectionRoom.vue'
 
 const gameStore = useGameStore()
 const mapStore = useMapStore()

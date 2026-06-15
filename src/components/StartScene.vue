@@ -70,6 +70,9 @@
           <button class="btn btn-memory-archive half-btn" @click="openMemoryArchive">
             🏛️ 回忆档案馆
           </button>
+          <button class="btn btn-collection half-btn" @click="openCollectionRoom">
+            🏺 收藏室 ({{ collectionProgress }}%)
+          </button>
           <button class="btn btn-leaderboard half-btn" @click="openLeaderboard">
             🏆 排行榜
           </button>
@@ -92,6 +95,7 @@ import { useArchiveStore } from '../stores/archiveStore'
 import { useChallengeStore } from '../stores/challengeStore'
 import { useMapStore } from '../stores/mapStore'
 import { usePrologueStore } from '../stores/prologueStore'
+import { useCollectionStore } from '../stores/collectionStore'
 
 const gameStore = useGameStore()
 const saveStore = useSaveStore()
@@ -99,8 +103,11 @@ const archiveStore = useArchiveStore()
 const challengeStore = useChallengeStore()
 const mapStore = useMapStore()
 const prologueStore = usePrologueStore()
+const collectionStore = useCollectionStore()
 
 const hasSave = saveStore.hasSave
+
+const collectionProgress = computed(() => collectionStore.overallProgress)
 
 const hasArchive = computed(() => archiveStore.hasArchive)
 
@@ -162,6 +169,10 @@ function openLeaderboard() {
 
 function openBadges() {
   challengeStore.openBadges()
+}
+
+function openCollectionRoom() {
+  collectionStore.openCollectionRoom()
 }
 
 function startMapExplore() {
@@ -474,6 +485,19 @@ function startPrologue() {
 .btn-memory-archive:hover {
   background: linear-gradient(135deg, rgba(96, 165, 150, 0.5), rgba(60, 130, 120, 0.3));
   box-shadow: 0 4px 15px rgba(96, 165, 150, 0.35);
+  transform: translateY(-2px);
+}
+
+.btn-collection {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.15));
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.btn-collection:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.45), rgba(245, 158, 11, 0.25));
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
   transform: translateY(-2px);
 }
 

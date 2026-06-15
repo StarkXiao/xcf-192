@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { scenes, memories, craftedItems, recipes, hiddenMemories, specialEndings, chapters, keyChoices, hiddenItems, reunionEndings, endingWeightLabels, fakeClues, fogHiddenItems } from '../data/storyData'
 import { ENDING_MOOD_THRESHOLDS } from './moodStore'
 import { useChallengeStore } from './challengeStore'
+import { useTimeStore } from './timeStore'
 
 export const EFFICIENCY_LEVELS = {
   PERFECT: 'perfect',
@@ -257,8 +258,13 @@ export const useStoryStore = defineStore('story', () => {
 
   function isFakeClueVisibleAtTime(fakeClue, hour) {
     if (!fakeClue || !fakeClue.visiblePeriods) return true
-    const period = getTimePeriodForHour(hour)
-    return fakeClue.visiblePeriods.includes(period)
+    try {
+      const timeStore = useTimeStore()
+      const period = timeStore.getTimePeriodForHour(hour)
+      return fakeClue.visiblePeriods.includes(period)
+    } catch (e) {
+      return true
+    }
   }
 
   function getFogHiddenItems() {

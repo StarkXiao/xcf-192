@@ -355,6 +355,17 @@
             <button class="hint-btn theater-hint-btn" @click="openMemoryTheater">🎭 记忆剧场</button>
           </div>
 
+          <div class="collection-hint">
+            <span class="hint-icon">🏛️</span>
+            修复旧物·考证来源·补完故事
+            <button class="hint-btn collection-hint-btn" @click="openCollectionRoom">
+              <span class="cr-hint-progress">
+                {{ collectionProgress }}%
+              </span>
+              雾城收藏室
+            </button>
+          </div>
+
           <div class="branch-continue" v-if="hasBranches">
             <h4 class="branch-title">🌿 从分支存档继续</h4>
             <div class="branch-list">
@@ -400,12 +411,14 @@ import { useStoryStore } from '../stores/storyStore'
 import { useArchiveStore } from '../stores/archiveStore'
 import { useTimeStore, GAME_START_HOUR, GAME_TOTAL_HOURS } from '../stores/timeStore'
 import { useChallengeStore, CHALLENGE_BADGES } from '../stores/challengeStore'
+import { useCollectionStore } from '../stores/collectionStore'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
 const archiveStore = useArchiveStore()
 const timeStore = useTimeStore()
 const challengeStore = useChallengeStore()
+const collectionStore = useCollectionStore()
 
 const showIntro = ref(true)
 
@@ -731,6 +744,12 @@ function openJournalEditor() {
 function openMemoryTheater() {
   gameStore.openMemoryTheater()
 }
+
+function openCollectionRoom() {
+  collectionStore.openCollectionRoom()
+}
+
+const collectionProgress = computed(() => collectionStore.overallProgress)
 
 const hasTheaterContent = computed(() => {
   return triggeredMemories.value > 0 || unlockedHM.value > 0 || archiveHM.value > 0
@@ -1773,7 +1792,8 @@ function openBadgesFromEnd() {
 
 .archive-hint,
 .journal-hint,
-.theater-hint {
+.theater-hint,
+.collection-hint {
   background: rgba(212, 165, 116, 0.06);
   border: 1px solid rgba(212, 165, 116, 0.15);
   border-radius: 12px;
@@ -1796,6 +1816,17 @@ function openBadgesFromEnd() {
 .theater-hint {
   background: rgba(167, 139, 250, 0.06);
   border-color: rgba(167, 139, 250, 0.15);
+}
+
+.collection-hint {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.04));
+  border-color: rgba(251, 191, 36, 0.25);
+  animation: hint-glow 3s ease-in-out infinite;
+}
+
+@keyframes hint-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+  50% { box-shadow: 0 0 15px 0 rgba(251, 191, 36, 0.1); }
 }
 
 .hint-icon {
@@ -1824,6 +1855,24 @@ function openBadgesFromEnd() {
   background: rgba(167, 139, 250, 0.15);
   color: #a78bfa;
   border-color: rgba(167, 139, 250, 0.25);
+}
+
+.collection-hint-btn {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.cr-hint-progress {
+  padding: 0.1rem 0.5rem;
+  background: rgba(251, 191, 36, 0.2);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .hint-btn:hover {
