@@ -194,7 +194,8 @@ import { useCollectionStore } from '../stores/collectionStore'
 import { COLLECTION_PHASES } from '../data/collectionData'
 
 const collectionStore = useCollectionStore()
-const selectedDetail = ref(null)
+const selectedDetailId = ref(null)
+const selectedDetail = computed(() => selectedDetailId.value ? collectionStore.getRelicViewModel(selectedDetailId.value) : null)
 
 const phases = computed(() => COLLECTION_PHASES)
 
@@ -261,11 +262,11 @@ function getConditionColor(pct) {
 
 function openItemDetail(item) {
   if (!collectionStore.isRelicUnlocked(item.id)) return
-  selectedDetail.value = item
+  selectedDetailId.value = item.id
 }
 
 function closeDetail() {
-  selectedDetail.value = null
+  selectedDetailId.value = null
 }
 
 function goToWorkbench() {

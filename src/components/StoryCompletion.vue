@@ -202,7 +202,8 @@ import { useCollectionStore } from '../stores/collectionStore'
 
 const collectionStore = useCollectionStore()
 
-const selectedItem = ref(null)
+const selectedId = ref(null)
+const selectedItem = computed(() => selectedId.value ? collectionStore.getRelicViewModel(selectedId.value) : null)
 
 const storyItems = computed(() => collectionStore.allCollectionItems)
 
@@ -216,12 +217,12 @@ const completedCount = computed(() =>
 
 function selectStory(item) {
   if (!collectionStore.isRelicUnlocked(item.id)) return
-  selectedItem.value = item
+  selectedId.value = item.id
 }
 
 function isFragmentUnlocked(fragId) {
-  if (!selectedItem.value) return false
-  return collectionStore.isFragmentUnlocked(selectedItem.value.id, fragId)
+  if (!selectedId.value) return false
+  return collectionStore.isFragmentUnlocked(selectedId.value, fragId)
 }
 
 function unlockedFragCount(relicId) {
@@ -259,8 +260,8 @@ function getUnlockHint(idx) {
 }
 
 function unlockFragment() {
-  if (!selectedItem.value) return
-  const result = collectionStore.unlockNextFragment(selectedItem.value.id)
+  if (!selectedId.value) return
+  const result = collectionStore.unlockNextFragment(selectedId.value)
   if (!result.success) {
     console.warn(result.reason)
   }

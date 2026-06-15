@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import {
   COLLECTION_ITEMS,
   COLLECTION_PHASES,
@@ -9,6 +9,54 @@ import {
 } from '../data/collectionData'
 
 const COLLECTION_KEY = 'foggy_city_collection_room'
+const SCHEMA_VERSION = 2
+
+function cloneRelicInitialState(staticRelic) {
+  return {
+    id: staticRelic.id,
+    condition: {
+      current: staticRelic.condition?.current ?? 35,
+      max: staticRelic.condition?.max ?? 100,
+      labels: staticRelic.condition?.labels ?? []
+    },
+    restoration: {
+      completed: false,
+      steps: staticRelic.restoration.steps.map(s => ({
+        id: s.id,
+        desc: s.desc,
+        requiredMat: s.requiredMat,
+        done: false
+      }))
+    },
+    provenance: {
+      clues: staticRelic.provenance.clues.map(c => ({
+        id: c.id,
+        title: c.title,
+        text: c.text,
+        hint: c.hint
+      })),
+      origin: null,
+      year: null,
+      owner: null
+    },
+    story: {
+      fragments: staticRelic.story.fragments.map(f => ({
+        id: f.id,
+        title: f.title,
+        text: f.text || f.content
+      })),
+      complete: false
+    }
+  }
+}
+
+function buildFreshRelicStates() {
+  const map = {}
+  for (const staticRelic of COLLECTION_ITEMS) {
+    map[staticRelic.id] = cloneRelicInitialState(staticRelic)
+  }
+  return map
+}
 
 export const useCollectionStore = defineStore('collection', () => {
   const isCollectionRoomActive = ref(false)
@@ -27,8 +75,9 @@ export const useCollectionStore = defineStore('collection', () => {
   const unlockedStoryFragments = ref({})
   const solvedClues = ref({})
   const currentPhase = ref('phase1')
-
   const recentActivity = ref([])
+
+  const relicStates = reactive(buildFreshRelicStates())
 
   function addActivity(text, type = 'info') {
     recentActivity.value.unshift({
@@ -47,30 +96,169 @@ export const useCollectionStore = defineStore('collection', () => {
   const allMaterials = computed(() => MATERIAL_SHOP)
   const phaseRewards = computed(() => PHASE_REWARDS)
 
+  function getRelicRuntime(relicId) {
+    return relicStates[relicId] || null
+  }
+
+  function getRelicViewModel(relicId) {
+    const def = COLLECTION_ITEMS.find(i => i.id === relicId)
+    if (!def) return null
+    const rt = relicStates[relicId]
+    if (!rt) return def
+    return {
+      ...def,
+      condition: { ...def.condition, ...rt.condition },
+      restoration: {
+        ...def.restoration,
+        completed: rt.restoration.completed,
+        steps: def.restoration.steps.map((sDef, idx) => ({
+          ...sDef,
+          done: rt.restoration.steps[idx]?.done ?? sDef.done ?? false
+        }))
+      },
+      provenance: {
+        ...def.provenance,
+        clues: def.provenance.clues.map((cDef, idx) => ({
+          ...cDef,
+          ...(rt.provenance.clues[idx] || {})
+        })),
+        origin: rt.provenance.origin ?? def.provenance.origin,
+        year: rt.provenance.year ?? def.provenance.year,
+        owner: rt.provenance.owner ?? def.provenance.owner
+      },
+      story: {
+        ...def.story,
+        complete: rt.story.complete,
+        fragments: def.story.fragments.map((fDef, idx) => ({
+          ...fDef,
+          ...(rt.story.fragments[idx] || {})
+        }))
+      }
+    }
+  }
+
   function init() {
     try {
       const data = localStorage.getItem(COLLECTION_KEY)
       if (!data) return
       const parsed = JSON.parse(data)
-      coins.value = parsed.coins ?? 500
-      unlockedRelics.value = parsed.unlockedRelics ?? []
-      restoredRelics.value = parsed.restoredRelics ?? []
-      researchedRelics.value = parsed.researchedRelics ?? []
-      storyCompleteRelics.value = parsed.storyCompleteRelics ?? []
-      ownedMaterials.value = parsed.ownedMaterials ?? {}
-      claimedPhases.value = parsed.claimedPhases ?? []
-      unlockedStoryFragments.value = parsed.unlockedStoryFragments ?? {}
-      solvedClues.value = parsed.solvedClues ?? {}
-      currentPhase.value = parsed.currentPhase ?? 'phase1'
-      recentActivity.value = parsed.recentActivity ?? []
+
+      if (parsed.schemaVersion !== SCHEMA_VERSION) {
+        console.warn(`[收藏室] 数据版本不匹配（本地=${parsed.schemaVersion ?? 1}，当前=${SCHEMA_VERSION}），进行迁移或重建`)
+      }
+
+      coins.value = typeof parsed.coins === 'number' ? parsed.coins : 500
+      unlockedRelics.value = Array.isArray(parsed.unlockedRelics) ? parsed.unlockedRelics : []
+      restoredRelics.value = Array.isArray(parsed.restoredRelics) ? parsed.restoredRelics : []
+      researchedRelics.value = Array.isArray(parsed.researchedRelics) ? parsed.researchedRelics : []
+      storyCompleteRelics.value = Array.isArray(parsed.storyCompleteRelics) ? parsed.storyCompleteRelics : []
+      ownedMaterials.value = parsed.ownedMaterials && typeof parsed.ownedMaterials === 'object' ? parsed.ownedMaterials : {}
+      claimedPhases.value = Array.isArray(parsed.claimedPhases) ? parsed.claimedPhases : []
+      unlockedStoryFragments.value = parsed.unlockedStoryFragments && typeof parsed.unlockedStoryFragments === 'object' ? parsed.unlockedStoryFragments : {}
+      solvedClues.value = parsed.solvedClues && typeof parsed.solvedClues === 'object' ? parsed.solvedClues : {}
+      currentPhase.value = parsed.currentPhase || 'phase1'
+      recentActivity.value = Array.isArray(parsed.recentActivity) ? parsed.recentActivity : []
+
+      const savedRelicStates = parsed.relicStates && typeof parsed.relicStates === 'object' ? parsed.relicStates : null
+
+      for (const staticRelic of COLLECTION_ITEMS) {
+        const rid = staticRelic.id
+        const fresh = cloneRelicInitialState(staticRelic)
+        const saved = savedRelicStates?.[rid]
+
+        if (saved && typeof saved === 'object') {
+          if (saved.condition && typeof saved.condition === 'object') {
+            fresh.condition.current = typeof saved.condition.current === 'number'
+              ? Math.min(fresh.condition.max, Math.max(0, saved.condition.current))
+              : fresh.condition.current
+            if (Array.isArray(saved.condition.labels)) {
+              fresh.condition.labels = saved.condition.labels
+            }
+          }
+          if (saved.restoration && typeof saved.restoration === 'object') {
+            fresh.restoration.completed = !!saved.restoration.completed
+            if (Array.isArray(saved.restoration.steps)) {
+              for (let i = 0; i < fresh.restoration.steps.length; i++) {
+                if (saved.restoration.steps[i]) {
+                  fresh.restoration.steps[i].done = !!saved.restoration.steps[i].done
+                }
+              }
+            }
+          }
+          if (saved.provenance && typeof saved.provenance === 'object') {
+            fresh.provenance.origin = saved.provenance.origin ?? null
+            fresh.provenance.year = saved.provenance.year ?? null
+            fresh.provenance.owner = saved.provenance.owner ?? null
+          }
+          if (saved.story && typeof saved.story === 'object') {
+            fresh.story.complete = !!saved.story.complete
+          }
+        }
+
+        if (!relicStates[rid]) {
+          relicStates[rid] = fresh
+        } else {
+          Object.assign(relicStates[rid].condition, fresh.condition)
+          Object.assign(relicStates[rid].restoration, fresh.restoration)
+          relicStates[rid].restoration.steps = fresh.restoration.steps
+          Object.assign(relicStates[rid].provenance, fresh.provenance)
+          relicStates[rid].provenance.clues = fresh.provenance.clues
+          Object.assign(relicStates[rid].story, fresh.story)
+          relicStates[rid].story.fragments = fresh.story.fragments
+        }
+      }
+
+      for (const relicId of Object.keys(relicStates)) {
+        if (!COLLECTION_ITEMS.find(i => i.id === relicId)) {
+          delete relicStates[relicId]
+        }
+      }
     } catch (e) {
-      console.error('读取收藏室档案失败:', e)
+      console.error('[收藏室] 读取档案失败，已重置为初始状态：', e)
+      coins.value = 500
+      unlockedRelics.value = []
+      restoredRelics.value = []
+      researchedRelics.value = []
+      storyCompleteRelics.value = []
+      ownedMaterials.value = {}
+      claimedPhases.value = []
+      unlockedStoryFragments.value = {}
+      solvedClues.value = {}
+      currentPhase.value = 'phase1'
+      recentActivity.value = []
+      const fresh = buildFreshRelicStates()
+      for (const k of Object.keys(relicStates)) delete relicStates[k]
+      for (const [k, v] of Object.entries(fresh)) relicStates[k] = v
     }
   }
 
   function persist() {
     try {
-      const data = {
+      const relicStatesSnapshot = {}
+      for (const [rid, rt] of Object.entries(relicStates)) {
+        relicStatesSnapshot[rid] = {
+          condition: {
+            current: rt.condition.current,
+            labels: rt.condition.labels
+          },
+          restoration: {
+            completed: rt.restoration.completed,
+            steps: rt.restoration.steps.map(s => ({ id: s.id, done: !!s.done }))
+          },
+          provenance: {
+            origin: rt.provenance.origin ?? null,
+            year: rt.provenance.year ?? null,
+            owner: rt.provenance.owner ?? null
+          },
+          story: {
+            complete: !!rt.story.complete
+          }
+        }
+      }
+
+      const payload = {
+        schemaVersion: SCHEMA_VERSION,
+        updatedAt: Date.now(),
         coins: coins.value,
         unlockedRelics: unlockedRelics.value,
         restoredRelics: restoredRelics.value,
@@ -81,11 +269,12 @@ export const useCollectionStore = defineStore('collection', () => {
         unlockedStoryFragments: unlockedStoryFragments.value,
         solvedClues: solvedClues.value,
         currentPhase: currentPhase.value,
-        recentActivity: recentActivity.value
+        recentActivity: recentActivity.value,
+        relicStates: relicStatesSnapshot
       }
-      localStorage.setItem(COLLECTION_KEY, JSON.stringify(data))
+      localStorage.setItem(COLLECTION_KEY, JSON.stringify(payload))
     } catch (e) {
-      console.error('保存收藏室档案失败:', e)
+      console.error('[收藏室] 保存档案失败:', e)
     }
   }
 
@@ -156,7 +345,7 @@ export const useCollectionStore = defineStore('collection', () => {
   }
 
   function getRelicById(relicId) {
-    return COLLECTION_ITEMS.find(i => i.id === relicId)
+    return getRelicViewModel(relicId)
   }
 
   function unlockRelicByBaseItem(baseItemId) {
@@ -237,61 +426,77 @@ export const useCollectionStore = defineStore('collection', () => {
       return { success: false, reason: '金币不足' }
     }
     coins.value -= totalCost
-    addMaterial(matId, count)
+    if (!ownedMaterials.value[matId]) ownedMaterials.value[matId] = 0
+    ownedMaterials.value[matId] += count
     addActivity(`💰 购买了 ${mat.icon} ${mat.name} x${count}，花费${totalCost}金币`, 'info')
     persist()
     return { success: true }
   }
 
   function canRestoreStep(relicId, stepId) {
-    const relic = getRelicById(relicId)
-    if (!relic) return false
-    const step = relic.restoration.steps.find(s => s.id === stepId)
-    if (!step || step.done) return false
-    const mat = relic.restoration.materials.find(m => m.id === step.requiredMat)
+    const relicDef = COLLECTION_ITEMS.find(i => i.id === relicId)
+    if (!relicDef) return false
+    const rt = relicStates[relicId]
+    if (!rt) return false
+    if (rt.restoration.completed) return false
+    const stepIndex = relicDef.restoration.steps.findIndex(s => s.id === stepId)
+    if (stepIndex < 0) return false
+    const stepDef = relicDef.restoration.steps[stepIndex]
+    const rtStep = rt.restoration.steps[stepIndex]
+    if (!rtStep || rtStep.done) return false
+    const mat = relicDef.restoration.materials.find(m => m.id === stepDef.requiredMat)
     if (!mat) return false
-    return getMaterialCount(step.requiredMat) >= mat.count
+    return getMaterialCount(stepDef.requiredMat) >= mat.count
   }
 
   function performRestoreStep(relicId, stepId) {
-    if (!canRestoreStep(relicId, stepId)) {
-      return { success: false, reason: '条件不满足' }
+    const relicDef = COLLECTION_ITEMS.find(i => i.id === relicId)
+    if (!relicDef) return { success: false, reason: '旧物不存在' }
+    const rt = relicStates[relicId]
+    if (!rt) return { success: false, reason: '运行时状态缺失' }
+
+    const stepIndex = relicDef.restoration.steps.findIndex(s => s.id === stepId)
+    if (stepIndex < 0) return { success: false, reason: '修复步骤不存在' }
+
+    const stepDef = relicDef.restoration.steps[stepIndex]
+    const rtStep = rt.restoration.steps[stepIndex]
+    if (rtStep.done) return { success: false, reason: '该步骤已完成' }
+
+    const mat = relicDef.restoration.materials.find(m => m.id === stepDef.requiredMat)
+    if (!mat) return { success: false, reason: '材料配方错误' }
+    if (getMaterialCount(stepDef.requiredMat) < mat.count) {
+      return { success: false, reason: '材料不足' }
     }
-    const relic = getRelicById(relicId)
-    const step = relic.restoration.steps.find(s => s.id === stepId)
-    const mat = relic.restoration.materials.find(m => m.id === step.requiredMat)
-    
-    useMaterial(step.requiredMat, mat.count)
-    step.done = true
 
-    relic.condition.current = Math.min(100, relic.condition.current + Math.floor(70 / relic.restoration.steps.length))
+    useMaterial(stepDef.requiredMat, mat.count)
+    rtStep.done = true
 
-    const allDone = relic.restoration.steps.every(s => s.done)
+    const stepCount = rt.restoration.steps.length
+    rt.condition.current = Math.min(rt.condition.max, rt.condition.current + Math.floor(70 / stepCount))
+
+    const allDone = rt.restoration.steps.every(s => s.done)
     if (allDone) {
-      relic.restoration.completed = true
-      relic.condition.current = 100
+      rt.restoration.completed = true
+      rt.condition.current = rt.condition.max
       if (!restoredRelics.value.includes(relicId)) {
         restoredRelics.value.push(relicId)
         coins.value += 150
-        addActivity(`✨ 修复完成：${relic.icon} ${relic.name}，获得150金币！`, 'success')
+        addActivity(`✨ 修复完成：${relicDef.icon} ${relicDef.name}，获得150金币！`, 'success')
       }
-      checkPhaseReward(relic.phase)
+      checkPhaseReward(relicDef.phase)
     } else {
-      addActivity(`🔧 修复进度：完成「${step.desc}」`, 'info')
+      addActivity(`🔧 修复进度：完成「${stepDef.desc}」`, 'info')
     }
     persist()
-    return { success: true, completed: allDone, relic }
+    return { success: true, completed: allDone, relic: getRelicViewModel(relicId) }
   }
 
   function checkPhaseReward(phaseId) {
     const phase = COLLECTION_PHASES[phaseId]
-    if (!phase) return
+    if (!phase) return false
     const phaseItems = COLLECTION_ITEMS.filter(i => i.phase === phaseId)
     const restored = phaseItems.filter(i => restoredRelics.value.includes(i.id)).length
-    if (restored >= phase.requiredCount && !claimedPhases.value.includes(phaseId)) {
-      return true
-    }
-    return false
+    return restored >= phase.requiredCount && !claimedPhases.value.includes(phaseId)
   }
 
   function claimPhaseReward(phaseId) {
@@ -306,8 +511,14 @@ export const useCollectionStore = defineStore('collection', () => {
 
     claimedPhases.value.push(phaseId)
     coins.value += reward.coins
+
     for (const matId of reward.materials) {
-      addMaterial(matId, 1)
+      if (!ownedMaterials.value[matId]) ownedMaterials.value[matId] = 0
+      ownedMaterials.value[matId] += 1
+      const mat = MATERIAL_SHOP.find(m => m.id === matId)
+      if (mat) {
+        addActivity(`📥 阶段奖励：${mat.icon} ${mat.name} x1`, 'success')
+      }
     }
 
     currentReward.value = {
@@ -326,8 +537,10 @@ export const useCollectionStore = defineStore('collection', () => {
   }
 
   function solveClue(relicId, clueId, answer) {
-    const relic = getRelicById(relicId)
-    if (!relic) return { success: false, reason: '旧物不存在' }
+    const relicDef = COLLECTION_ITEMS.find(i => i.id === relicId)
+    if (!relicDef) return { success: false, reason: '旧物不存在' }
+    const rt = relicStates[relicId]
+    if (!rt) return { success: false, reason: '运行时状态缺失' }
     const answers = PROVENANCE_ANSWERS[relicId]
     if (!answers) return { success: false, reason: '考证资料缺失' }
     const clueAnswer = answers[clueId]
@@ -342,10 +555,11 @@ export const useCollectionStore = defineStore('collection', () => {
 
     const normalizedAnswer = answer.trim().toLowerCase()
     const normalizedCorrect = clueAnswer.answer.trim().toLowerCase()
-    
-    const isCorrect = normalizedCorrect.includes(normalizedAnswer) || 
-                      normalizedAnswer.includes(normalizedCorrect.replace(/[·.]/g, '')) ||
-                      normalizedAnswer.length >= 2 && normalizedCorrect.replace(/[·.]/g, '').includes(normalizedAnswer)
+
+    const isCorrect =
+      normalizedCorrect.includes(normalizedAnswer) ||
+      normalizedAnswer.includes(normalizedCorrect.replace(/[·.]/g, '')) ||
+      (normalizedAnswer.length >= 2 && normalizedCorrect.replace(/[·.]/g, '').includes(normalizedAnswer))
 
     if (isCorrect) {
       solvedClues.value[relicId].push(clueId)
@@ -354,23 +568,23 @@ export const useCollectionStore = defineStore('collection', () => {
       if (!unlockedStoryFragments.value[relicId]) {
         unlockedStoryFragments.value[relicId] = []
       }
-      const fragIndex = relic.provenance.clues.findIndex(c => c.id === clueId)
-      const fragId = relic.story.fragments[fragIndex]?.id
+      const fragIndex = relicDef.provenance.clues.findIndex(c => c.id === clueId)
+      const fragId = relicDef.story.fragments[fragIndex]?.id
       if (fragId && !unlockedStoryFragments.value[relicId].includes(fragId)) {
         unlockedStoryFragments.value[relicId].push(fragId)
       }
 
-      const allCluesSolved = relic.provenance.clues.every(c => 
+      const allCluesSolved = relicDef.provenance.clues.every(c =>
         solvedClues.value[relicId]?.includes(c.id)
       )
       if (allCluesSolved) {
-        relic.provenance.origin = answers.origin
-        relic.provenance.year = answers.year
-        relic.provenance.owner = answers.owner
+        rt.provenance.origin = answers.origin
+        rt.provenance.year = answers.year
+        rt.provenance.owner = answers.owner
         if (!researchedRelics.value.includes(relicId)) {
           researchedRelics.value.push(relicId)
           coins.value += 100
-          addActivity(`🔍 考证完成：${relic.icon} ${relic.name}，获得100金币！`, 'success')
+          addActivity(`🔍 考证完成：${relicDef.icon} ${relicDef.name}，获得100金币！`, 'success')
         }
       }
 
@@ -383,9 +597,9 @@ export const useCollectionStore = defineStore('collection', () => {
   }
 
   function getHintForClue(relicId, clueId) {
-    const relic = getRelicById(relicId)
-    if (!relic) return null
-    const clue = relic.provenance.clues.find(c => c.id === clueId)
+    const relicDef = COLLECTION_ITEMS.find(i => i.id === relicId)
+    if (!relicDef) return null
+    const clue = relicDef.provenance.clues.find(c => c.id === clueId)
     return clue?.hint || null
   }
 
@@ -394,17 +608,19 @@ export const useCollectionStore = defineStore('collection', () => {
   }
 
   function unlockNextFragment(relicId) {
-    const relic = getRelicById(relicId)
-    if (!relic) return { success: false }
+    const relicDef = COLLECTION_ITEMS.find(i => i.id === relicId)
+    if (!relicDef) return { success: false }
+    const rt = relicStates[relicId]
+    if (!rt) return { success: false }
     const unlocked = unlockedStoryFragments.value[relicId] || []
-    const totalFragments = relic.story.fragments.length
-    
+    const totalFragments = relicDef.story.fragments.length
+
     if (unlocked.length >= totalFragments) {
       if (!storyCompleteRelics.value.includes(relicId)) {
         storyCompleteRelics.value.push(relicId)
-        relic.story.complete = true
+        rt.story.complete = true
         coins.value += 200
-        addActivity(`📖 故事完整：${relic.icon} ${relic.name} 的故事已补完！获得200金币！`, 'success')
+        addActivity(`📖 故事完整：${relicDef.icon} ${relicDef.name} 的故事已补完！获得200金币！`, 'success')
       }
       persist()
       return { success: true, completed: true }
@@ -415,7 +631,7 @@ export const useCollectionStore = defineStore('collection', () => {
     }
 
     coins.value -= 40
-    const nextFrag = relic.story.fragments[unlocked.length]
+    const nextFrag = relicDef.story.fragments[unlocked.length]
     if (!unlockedStoryFragments.value[relicId]) {
       unlockedStoryFragments.value[relicId] = []
     }
@@ -425,13 +641,17 @@ export const useCollectionStore = defineStore('collection', () => {
     if (unlockedStoryFragments.value[relicId].length >= totalFragments) {
       if (!storyCompleteRelics.value.includes(relicId)) {
         storyCompleteRelics.value.push(relicId)
-        relic.story.complete = true
+        rt.story.complete = true
         coins.value += 200
-        addActivity(`📖 故事完整：${relic.icon} ${relic.name} 的故事已补完！获得200金币！`, 'success')
+        addActivity(`📖 故事完整：${relicDef.icon} ${relicDef.name} 的故事已补完！获得200金币！`, 'success')
       }
     }
     persist()
-    return { success: true, fragment: nextFrag, completed: unlockedStoryFragments.value[relicId].length >= totalFragments }
+    return {
+      success: true,
+      fragment: nextFrag,
+      completed: unlockedStoryFragments.value[relicId].length >= totalFragments
+    }
   }
 
   function getRarityLabel(rarity) {
@@ -492,23 +712,15 @@ export const useCollectionStore = defineStore('collection', () => {
     solvedClues.value = {}
     currentPhase.value = 'phase1'
     recentActivity.value = []
-    
-    for (const relic of COLLECTION_ITEMS) {
-      relic.restoration.completed = false
-      relic.condition.current = 30 + Math.floor(Math.random() * 40)
-      relic.story.complete = false
-      relic.provenance.origin = null
-      relic.provenance.year = null
-      relic.provenance.owner = null
-      for (const step of relic.restoration.steps) {
-        step.done = false
-      }
-    }
-    
+
+    const fresh = buildFreshRelicStates()
+    for (const k of Object.keys(relicStates)) delete relicStates[k]
+    for (const [k, v] of Object.entries(fresh)) relicStates[k] = v
+
     try {
       localStorage.removeItem(COLLECTION_KEY)
     } catch (e) {
-      console.error('清除收藏室档案失败:', e)
+      console.error('[收藏室] 清除档案失败:', e)
     }
   }
 
@@ -531,6 +743,7 @@ export const useCollectionStore = defineStore('collection', () => {
     solvedClues,
     currentPhase,
     recentActivity,
+    relicStates,
     allCollectionItems,
     allPhases,
     allMaterials,
@@ -548,6 +761,8 @@ export const useCollectionStore = defineStore('collection', () => {
     isRelicResearched,
     isStoryComplete,
     getRelicById,
+    getRelicRuntime,
+    getRelicViewModel,
     unlockRelicByBaseItem,
     unlockRelic,
     getMaterialCount,
@@ -575,6 +790,7 @@ export const useCollectionStore = defineStore('collection', () => {
     closeRewardModal,
     clearAll,
     addActivity,
-    persist
+    persist,
+    init
   }
 })

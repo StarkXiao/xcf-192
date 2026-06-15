@@ -195,7 +195,12 @@ import { MATERIAL_SHOP, COLLECTION_PHASES } from '../data/collectionData'
 const collectionStore = useCollectionStore()
 
 const currentFilter = ref('all')
-const selectedItem = ref(null)
+const selectedId = ref(null)
+
+const selectedItem = computed(() => {
+  if (!selectedId.value) return null
+  return collectionStore.getRelicViewModel(selectedId.value)
+})
 
 const filters = [
   { id: 'all', label: '全部' },
@@ -236,7 +241,7 @@ function selectItem(item) {
   if (!collectionStore.isRelicUnlocked(item.id)) {
     return
   }
-  selectedItem.value = item
+  selectedId.value = item.id
 }
 
 function getPhaseName(phaseId) {
@@ -280,13 +285,9 @@ function getStepRequiredCount(matId) {
 }
 
 function doStep(stepId) {
-  if (!selectedItem.value) return
-  const result = collectionStore.performRestoreStep(selectedItem.value.id, stepId)
-  if (result.success) {
-    if (result.completed) {
-      selectedItem.value = { ...result.relic }
-    }
-  }
+  if (!selectedId.value) return
+  const result = collectionStore.performRestoreStep(selectedId.value, stepId)
+  return result
 }
 </script>
 

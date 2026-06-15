@@ -165,10 +165,11 @@
   </div>
 </template>
 
-<script setup>import { ref, computed, reactive } from 'vue';
+<script setup>import { ref, computed, reactive, watch } from 'vue';
 import { useCollectionStore } from '../stores/collectionStore';
 const collectionStore = useCollectionStore();
-const selectedItem = ref(null);
+const selectedId = ref(null);
+const selectedItem = computed(() => selectedId.value ? collectionStore.getRelicViewModel(selectedId.value) : null);
 const currentHint = ref(null);
 const answerInputs = reactive({});
 const lastResult = reactive({});
@@ -209,25 +210,26 @@ function isCurrentClue(idx) {
  return false;
 }
 function selectItem(item) {
- selectedItem.value = item;
+ selectedId.value = item.id;
  currentHint.value = null;
 }
 function showHint(clue) {
  currentHint.value = currentHint.value === clue.id ? null : clue.id;
 }
 function submitAnswer(clueId) {
- if (!selectedItem.value)
+ if (!selectedId.value)
  return;
  const answer = answerInputs[clueId];
  if (!answer?.trim())
  return;
- const result = collectionStore.solveClue(selectedItem.value.id, clueId, answer);
+ const result = collectionStore.solveClue(selectedId.value, clueId, answer);
  if (result.success) {
  lastResult[clueId] = { success: true, msg: '考证成功！' + (result.explanation || '') };
  clueExplanations[clueId] = result.explanation;
  answerInputs[clueId] = '';
  if (result.completed) {
- collectionStore.addActivity(`🔍 「${selectedItem.value.name}」来源考证全部完成！`, 'success');
+ const relic = collectionStore.getRelicById(selectedId.value);
+ if (relic) collectionStore.addActivity(`🔍 「${relic.name}」来源考证全部完成！`, 'success');
  }
  }
  else {
