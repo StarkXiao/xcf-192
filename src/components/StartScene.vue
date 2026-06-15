@@ -60,6 +60,9 @@
         <button class="btn btn-map-explore" @click="startMapExplore">
           🗺️ 雾城地图探索
         </button>
+        <button class="btn btn-prologue" @click="startPrologue">
+          🌫️ 序章 · 最后一天
+        </button>
         <div class="btn-row">
           <button v-if="hasArchive" class="btn btn-archive half-btn" @click="openArchive">
             📖 回忆档案 ({{ archiveSummary }})
@@ -88,12 +91,14 @@ import { useSaveStore } from '../stores/saveStore'
 import { useArchiveStore } from '../stores/archiveStore'
 import { useChallengeStore } from '../stores/challengeStore'
 import { useMapStore } from '../stores/mapStore'
+import { usePrologueStore } from '../stores/prologueStore'
 
 const gameStore = useGameStore()
 const saveStore = useSaveStore()
 const archiveStore = useArchiveStore()
 const challengeStore = useChallengeStore()
 const mapStore = useMapStore()
+const prologueStore = usePrologueStore()
 
 const hasSave = saveStore.hasSave
 
@@ -162,6 +167,10 @@ function openBadges() {
 function startMapExplore() {
   mapStore.resetMap()
   mapStore.enterMapMode()
+}
+
+function startPrologue() {
+  prologueStore.startPrologue()
 }
 </script>
 
@@ -425,6 +434,23 @@ function startMapExplore() {
 .btn-map-explore:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+}
+
+.btn-prologue {
+  background: linear-gradient(135deg, #c084fc 0%, #818cf8 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(192, 132, 252, 0.4);
+  animation: prologuePulse 3s ease-in-out infinite;
+}
+
+@keyframes prologuePulse {
+  0%, 100% { box-shadow: 0 4px 15px rgba(192, 132, 252, 0.4); }
+  50% { box-shadow: 0 4px 25px rgba(192, 132, 252, 0.6), 0 0 30px rgba(129, 140, 248, 0.3); }
+}
+
+.btn-prologue:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 25px rgba(192, 132, 252, 0.5);
 }
 
 .btn-archive {
