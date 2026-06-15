@@ -349,6 +349,12 @@
             <button class="hint-btn" @click="openJournal">查看手账</button>
           </div>
 
+          <div class="theater-hint" v-if="hasTheaterContent">
+            <span class="hint-icon">🎬</span>
+            回放你的记忆剧场
+            <button class="hint-btn theater-hint-btn" @click="openMemoryTheater">🎭 记忆剧场</button>
+          </div>
+
           <div class="branch-continue" v-if="hasBranches">
             <h4 class="branch-title">🌿 从分支存档继续</h4>
             <div class="branch-list">
@@ -721,6 +727,14 @@ function openJournal() {
 function openJournalEditor() {
   gameStore.openJournalEditor()
 }
+
+function openMemoryTheater() {
+  gameStore.openMemoryTheater()
+}
+
+const hasTheaterContent = computed(() => {
+  return triggeredMemories.value > 0 || unlockedHM.value > 0 || archiveHM.value > 0
+})
 
 function loadBranch(branchId) {
   gameStore.startGameFromBranch(branchId)
@@ -1758,7 +1772,8 @@ function openBadgesFromEnd() {
 }
 
 .archive-hint,
-.journal-hint {
+.journal-hint,
+.theater-hint {
   background: rgba(212, 165, 116, 0.06);
   border: 1px solid rgba(212, 165, 116, 0.15);
   border-radius: 12px;
@@ -1776,6 +1791,11 @@ function openBadgesFromEnd() {
 .journal-hint {
   background: rgba(96, 165, 250, 0.06);
   border-color: rgba(96, 165, 250, 0.15);
+}
+
+.theater-hint {
+  background: rgba(167, 139, 250, 0.06);
+  border-color: rgba(167, 139, 250, 0.15);
 }
 
 .hint-icon {
@@ -1798,6 +1818,12 @@ function openBadgesFromEnd() {
   background: rgba(96, 165, 250, 0.15);
   color: #60a5fa;
   border-color: rgba(96, 165, 250, 0.25);
+}
+
+.theater-hint-btn {
+  background: rgba(167, 139, 250, 0.15);
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.25);
 }
 
 .hint-btn:hover {

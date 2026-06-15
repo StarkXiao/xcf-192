@@ -47,6 +47,7 @@ export const useGameStore = defineStore('game', () => {
   const currentFakeClue = ref(null)
   const recentlyUnlockedFogItems = ref([])
   const showJournalEditor = ref(false)
+  const showMemoryTheater = ref(false)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -1039,6 +1040,14 @@ export const useGameStore = defineStore('game', () => {
     showJournalEditor.value = false
   }
 
+  function openMemoryTheater() {
+    showMemoryTheater.value = true
+  }
+
+  function closeMemoryTheater() {
+    showMemoryTheater.value = false
+  }
+
   function openLetterSystem() {
     if (letterStore.isLetterSystemUnlocked) {
       letterStore.openLetterSystem()
@@ -1196,6 +1205,9 @@ export const useGameStore = defineStore('game', () => {
     showJournalEditor,
     openJournalEditor,
     closeJournalEditor,
+    showMemoryTheater,
+    openMemoryTheater,
+    closeMemoryTheater,
     checkChapterProgress,
     advanceChapter,
     closeChapterNarration,
