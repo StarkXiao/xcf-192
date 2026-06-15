@@ -64,6 +64,10 @@
         </div>
       </div>
       <div class="header-right">
+        <button v-if="isLetterSystemUnlocked" class="menu-btn letter-btn" @click="openLetterPanel" :title="'雾城来信'">
+          ✉️
+          <span v-if="!isLetterEndingReached && letterCurrentRound > 0" class="letter-badge">第{{ letterCurrentRound }}封</span>
+        </button>
         <button class="menu-btn crafting-btn" @click="openCraftingPanel" :title="'旧物合成'">
           ✨
           <span v-if="availableRecipesCount > 0" class="craft-badge">{{ availableRecipesCount }}</span>
@@ -274,6 +278,9 @@
             </div>
           </div>
           <div class="menu-buttons">
+            <button v-if="isLetterSystemUnlocked" class="menu-btn-item letter-menu-btn" @click="openLetterFromMenu">
+              ✉️ 雾城来信
+            </button>
             <button class="menu-btn-item craft-menu-btn" @click="openCraftingFromMenu">
               ✨ 旧物合成工坊
             </button>
@@ -408,6 +415,10 @@ const visibleFakeCluesForCurrentScene = computed(() => gameStore.visibleFakeClue
 const showFakeClueModal = computed(() => gameStore.showFakeClueModal)
 const currentFakeClue = computed(() => gameStore.currentFakeClue)
 const isAnyFogItemRecentlyUnlocked = computed(() => gameStore.isAnyFogItemRecentlyUnlocked)
+
+const isLetterSystemUnlocked = computed(() => gameStore.isLetterSystemUnlocked)
+const letterCurrentRound = computed(() => gameStore.letterCurrentRound)
+const isLetterEndingReached = computed(() => gameStore.isLetterEndingReached)
 
 const sceneDescriptionStyle = computed(() => {
   const tone = textTone.value
@@ -552,6 +563,15 @@ function openJournal() {
 function openJournalFromMenu() {
   showMenu.value = false
   gameStore.openJournal()
+}
+
+function openLetterPanel() {
+  gameStore.openLetterSystem()
+}
+
+function openLetterFromMenu() {
+  showMenu.value = false
+  gameStore.openLetterSystem()
 }
 
 function openMemoryArchiveFromMenu() {
@@ -946,6 +966,35 @@ function getStarStyle(index) {
 .journal-btn:hover {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.3));
   box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+}
+
+.letter-btn {
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, rgba(255, 183, 77, 0.3), rgba(255, 152, 0, 0.2));
+  border-color: rgba(255, 183, 77, 0.4);
+}
+
+.letter-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 183, 77, 0.5), rgba(255, 152, 0, 0.3));
+  box-shadow: 0 0 15px rgba(255, 183, 77, 0.3);
+}
+
+.letter-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .craft-badge {

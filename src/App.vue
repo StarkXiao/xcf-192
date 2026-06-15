@@ -14,6 +14,7 @@
     <BadgeModal />
     <MemoryArchiveModal />
     <JournalEditor />
+    <LetterSystemModal />
   </div>
 </template>
 
@@ -33,6 +34,7 @@ import KeyChoiceModal from './components/KeyChoiceModal.vue'
 import LeaderboardModal from './components/LeaderboardModal.vue'
 import BadgeModal from './components/BadgeModal.vue'
 import MemoryArchiveModal from './components/MemoryArchiveModal.vue'
+import LetterSystemModal from './components/LetterSystemModal.vue'
 
 const gameStore = useGameStore()
 const mapStore = useMapStore()

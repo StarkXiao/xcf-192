@@ -7,6 +7,7 @@ import { useMoodStore } from './moodStore'
 import { useTimeStore } from './timeStore'
 import { useMusicStore } from './musicStore'
 import { useChallengeStore } from './challengeStore'
+import { useLetterStore } from './letterStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -54,6 +55,20 @@ export const useGameStore = defineStore('game', () => {
   const timeStore = useTimeStore()
   const musicStore = useMusicStore()
   const challengeStore = useChallengeStore()
+  const letterStore = useLetterStore()
+
+  function initLetterCallbacks() {
+    letterStore.setMoodCallback((emotion) => {
+      triggerMoodChange(emotion)
+    })
+    letterStore.setEndingWeightCallback((weight, value) => {
+      endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
+      musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
+    })
+    letterStore.setSaveCallback(() => {
+      saveProgress()
+    })
+  }
 
   const moodStateName = computed(() => moodStore.moodStateName)
   const moodStateColor = computed(() => moodStore.moodStateColor)
@@ -308,6 +323,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function startGame() {
+    initLetterCallbacks()
     const savedGame = saveStore.loadGame()
     if (savedGame) {
       currentSceneId.value = savedGame.currentSceneId
@@ -327,6 +343,9 @@ export const useGameStore = defineStore('game', () => {
       }
       if (savedGame.timeData) {
         timeStore.loadSaveData(savedGame.timeData)
+      }
+      if (savedGame.letterData) {
+        letterStore.loadLetterSaveData(savedGame.letterData)
       }
       if (savedGame.challengeMode) {
         challengeStore.startChallengeMode()
@@ -452,6 +471,7 @@ export const useGameStore = defineStore('game', () => {
     challengeStore.exitChallengeMode()
     moodStore.resetMood()
     timeStore.resetTime()
+    letterStore.resetLetterSystem()
     saveStore.clearSave()
   }
 
@@ -513,6 +533,8 @@ export const useGameStore = defineStore('game', () => {
           openKeyChoice(keyChoice)
         }, 500)
       }
+
+      letterStore.checkLetterUnlock(itemId)
 
       checkFogItemUnlocks()
 
@@ -950,6 +972,7 @@ export const useGameStore = defineStore('game', () => {
       triggeredFakeClues: [...triggeredFakeClues.value],
       moodData: moodStore.getSaveData(),
       timeData: timeStore.getSaveData(),
+      letterData: letterStore.getLetterSaveData(),
       challengeMode: challengeStore.isChallengeMode
     })
   }
@@ -1014,6 +1037,20 @@ export const useGameStore = defineStore('game', () => {
 
   function closeJournalEditor() {
     showJournalEditor.value = false
+  }
+
+  function openLetterSystem() {
+    if (letterStore.isLetterSystemUnlocked) {
+      letterStore.openLetterSystem()
+      pauseGame()
+    }
+  }
+
+  function closeLetterSystem() {
+    letterStore.closeLetterModal()
+    letterStore.closeReplyModal()
+    letterStore.closeEndingModal()
+    resumeGame()
   }
 
   return {
@@ -1102,6 +1139,20 @@ export const useGameStore = defineStore('game', () => {
     challengeBadgesCount,
     challengeStreak,
     todayDate,
+    isLetterSystemUnlocked: computed(() => letterStore.isLetterSystemUnlocked),
+    showLetterModal: computed(() => letterStore.showLetterModal),
+    showLetterReplyModal: computed(() => letterStore.showReplyModal),
+    showLetterEndingModal: computed(() => letterStore.showEndingModal),
+    letterCurrentLetter: computed(() => letterStore.currentLetter),
+    letterCurrentReply: computed(() => letterStore.currentReplyContent),
+    letterEnding: computed(() => letterStore.letterEnding),
+    letterReceivedCount: computed(() => letterStore.receivedLetterCount),
+    letterCurrentRound: computed(() => letterStore.currentRound),
+    letterTotalRounds: computed(() => letterStore.totalLetterRounds),
+    letterDominantTrait: computed(() => letterStore.dominantTrait),
+    letterTopTraits: computed(() => letterStore.topTraits),
+    letterRelationValue: computed(() => letterStore.relationValue),
+    isLetterEndingReached: computed(() => letterStore.isLetterEndingReached),
     startGame,
     startGameFromBranch,
     startChallengeGame,
@@ -1153,6 +1204,14 @@ export const useGameStore = defineStore('game', () => {
     getCurrentSceneDescription,
     triggerMoodChange,
     clearMoodChange,
-    triggerFinalKeyChoiceIfReady
+    triggerFinalKeyChoiceIfReady,
+    openLetterSystem,
+    closeLetterSystem,
+    letterMakeChoice: (choiceId) => letterStore.makeChoice(choiceId),
+    letterGoToNext: () => letterStore.goToNextLetter(),
+    letterHasMadeChoice: (choiceId) => letterStore.hasMadeChoice(choiceId),
+    letterCloseModal: () => letterStore.closeLetterModal(),
+    letterCloseReply: () => letterStore.closeReplyModal(),
+    letterCloseEnding: () => letterStore.closeEndingModal()
   }
 })
