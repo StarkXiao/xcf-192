@@ -1,9 +1,12 @@
 <template>
   <div class="game-container">
     <BackgroundMusic />
-    <StartScene v-if="gameState === 'start'" />
-    <GameScene v-else-if="gameState === 'playing'" />
-    <EndScene v-else-if="gameState === 'end'" />
+    <MapExplore v-if="isMapMode" />
+    <template v-else>
+      <StartScene v-if="gameState === 'start'" />
+      <GameScene v-else-if="gameState === 'playing'" />
+      <EndScene v-else-if="gameState === 'end'" />
+    </template>
     <ArchiveModal />
     <JournalModal />
     <KeyChoiceModal />
@@ -16,9 +19,11 @@
 <script setup>
 import { computed } from 'vue'
 import { useGameStore } from './stores/gameStore'
+import { useMapStore } from './stores/mapStore'
 import StartScene from './components/StartScene.vue'
 import GameScene from './components/GameScene.vue'
 import EndScene from './components/EndScene.vue'
+import MapExplore from './components/MapExplore.vue'
 import BackgroundMusic from './components/BackgroundMusic.vue'
 import ArchiveModal from './components/ArchiveModal.vue'
 import JournalModal from './components/JournalModal.vue'
@@ -28,7 +33,9 @@ import BadgeModal from './components/BadgeModal.vue'
 import MemoryArchiveModal from './components/MemoryArchiveModal.vue'
 
 const gameStore = useGameStore()
+const mapStore = useMapStore()
 const gameState = computed(() => gameStore.gameState)
+const isMapMode = computed(() => mapStore.isMapMode)
 </script>
 
 <style scoped>

@@ -57,6 +57,9 @@
         <button class="btn btn-challenge" @click="startChallenge">
           🎯 纪念日挑战模式
         </button>
+        <button class="btn btn-map-explore" @click="startMapExplore">
+          🗺️ 雾城地图探索
+        </button>
         <div class="btn-row">
           <button v-if="hasArchive" class="btn btn-archive half-btn" @click="openArchive">
             📖 回忆档案 ({{ archiveSummary }})
@@ -84,11 +87,13 @@ import { useGameStore } from '../stores/gameStore'
 import { useSaveStore } from '../stores/saveStore'
 import { useArchiveStore } from '../stores/archiveStore'
 import { useChallengeStore } from '../stores/challengeStore'
+import { useMapStore } from '../stores/mapStore'
 
 const gameStore = useGameStore()
 const saveStore = useSaveStore()
 const archiveStore = useArchiveStore()
 const challengeStore = useChallengeStore()
+const mapStore = useMapStore()
 
 const hasSave = saveStore.hasSave
 
@@ -152,6 +157,11 @@ function openLeaderboard() {
 
 function openBadges() {
   challengeStore.openBadges()
+}
+
+function startMapExplore() {
+  mapStore.resetMap()
+  mapStore.enterMapMode()
 }
 </script>
 
@@ -404,6 +414,17 @@ function openBadges() {
 
 .btn-challenge:hover {
   transform: translateY(-2px) scale(1.02);
+}
+
+.btn-map-explore {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-map-explore:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
 }
 
 .btn-archive {

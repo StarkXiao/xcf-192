@@ -1,38 +1,31 @@
 <template>
-  <Transition name="fade">
-    <div v-if="showModal" class="memory-modal-overlay" @click.self="closeModal">
-      <div class="memory-modal" :class="[emotionClass, { 'hidden-memory': isHidden }]">
-        <div v-if="isHidden" class="hidden-memory-banner">
-          <span class="banner-star">✦</span>
-          隐藏回忆解锁
-          <span class="banner-star">✦</span>
-        </div>
-        
-        <div class="memory-header">
-          <span class="memory-year">{{ memory?.year }}</span>
-          <span class="memory-emoji">{{ emotionEmoji }}</span>
-        </div>
-        
-        <h2 class="memory-title" :class="{ 'hidden-title': isHidden }">
-          {{ memory?.title }}
-        </h2>
-        
-        <div class="memory-divider" :class="{ 'hidden-divider': isHidden }"></div>
-        
-        <div class="memory-content" :class="{ 'hidden-content': isHidden }" :style="contentStyle">
-          {{ toneModifiedContent }}
-        </div>
-        
-        <div class="memory-footer">
-          <div class="memory-item-info">
-            <span class="item-icon">{{ item?.icon }}</span>
-            <div class="item-text">
-              <span class="item-name">{{ item?.name }}</span>
-              <span v-if="isHidden" class="item-tag">合成道具</span>
-            </div>
+  <Transition name="memory-fade">
+    <div v-if="mapStore.showMemoryModal && mapStore.currentMemory" class="memory-overlay">
+      <div class="memory-container" :class="`emotion-${mapStore.currentMemory.emotion}`">
+        <div class="memory-glow"></div>
+        <div class="memory-content">
+          <div class="memory-emoji">
+            {{ getEmoji(mapStore.currentMemory.emotion) }}
           </div>
-          <button class="close-btn" :class="{ 'hidden-btn': isHidden }" @click="closeModal">
-            {{ isHidden ? '继续探索' : '继续寻找' }}
+
+          <h3 class="memory-title">{{ mapStore.currentMemory.title }}</h3>
+
+          <div class="memory-divider"></div>
+
+          <div class="memory-text-wrap">
+            <p class="memory-text">
+              {{ mapStore.currentMemory.content }}
+            </p>
+          </div>
+
+          <div class="memory-meta">
+            <span class="memory-tag" :class="`tag-${mapStore.currentMemory.emotion}`">
+              {{ getEmotionLabel(mapStore.currentMemory.emotion) }}
+            </span>
+          </div>
+
+          <button class="memory-close-btn" @click="mapStore.closeMemoryModal">
+            将这段回忆珍藏于心 →
           </button>
         </div>
       </div>
@@ -41,32 +34,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useGameStore } from '../stores/gameStore'
-import { useStoryStore } from '../stores/storyStore'
+import { useMapStore } from '../stores/mapStore'
 
-const gameStore = useGameStore()
-const storyStore = useStoryStore()
+const mapStore = useMapStore()
 
-const showModal = computed(() => gameStore.showMemoryModal)
-const memory = computed(() => gameStore.currentMemory)
-const textTone = computed(() => gameStore.textTone)
-const moodStateId = computed(() => gameStore.moodStateId)
-
-const isHidden = computed(() => memory.value?.isHidden === true)
-
-const item = computed(() => {
-  if (memory.value) {
-    if (isHidden.value && memory.value.triggerCraftId) {
-      return storyStore.getCraftedItemById(memory.value.triggerCraftId)
-    }
-    return storyStore.getItemById(memory.value.triggerItemId)
-  }
-  return null
-})
-
-const emotionEmoji = computed(() => {
-  const emotions = {
+function getEmoji(emotion) {
+  const map = {
     sad: '😢',
     warm: '🥰',
     pensive: '🤔',
@@ -81,313 +54,237 @@ const emotionEmoji = computed(() => {
     touched: '🥹',
     determined: '💪'
   }
-  return emotions[memory.value?.emotion] || '💭'
-})
+  return map[emotion] || '💭'
+}
 
-const emotionClass = computed(() => {
-  return `emotion-${memory.value?.emotion || 'default'} mood-${moodStateId.value}`
-})
-
-const toneModifiedContent = computed(() => {
-  if (!memory.value) return ''
-  const tone = textTone.value
-  let content = memory.value.content
-  
-  if (tone.prefix) {
-    content = tone.prefix + ' ' + content
+function getEmotionLabel(emotion) {
+  const map = {
+    sad: '悲伤',
+    warm: '温暖',
+    pensive: '沉思',
+    happy: '喜悦',
+    sweet: '甜蜜',
+    nervous: '紧张',
+    bittersweet: '苦乐参半',
+    shocking: '震惊',
+    romantic: '浪漫',
+    regret: '遗憾',
+    melancholy: '忧郁',
+    touched: '感动',
+    determined: '坚定'
   }
-  
-  return content
-})
-
-const contentStyle = computed(() => {
-  const tone = textTone.value
-  const style = {}
-  if (tone.color) {
-    style.color = tone.color
-  }
-  if (tone.italic) {
-    style.fontStyle = 'italic'
-  }
-  return style
-})
-
-function closeModal() {
-  gameStore.closeMemory()
+  return map[emotion] || '回忆'
 }
 </script>
 
 <style scoped>
-.memory-modal-overlay {
+.memory-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(15px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
-  padding: 20px;
+  z-index: 200;
+  padding: 1.5rem;
 }
 
-.memory-modal {
-  background: linear-gradient(145deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
-  border-radius: 20px;
-  padding: 2rem;
-  max-width: 90vw;
-  max-height: 85vh;
-  overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: modalIn 0.5s ease;
+.memory-container {
   position: relative;
+  width: 100%;
+  max-width: 500px;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(180deg, rgba(30, 30, 50, 0.95) 0%, rgba(15, 15, 30, 0.98) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
 }
 
-.memory-modal.hidden-memory {
-  background: linear-gradient(145deg, rgba(50, 40, 20, 0.98), rgba(40, 30, 10, 0.99));
-  border: 2px solid rgba(255, 215, 0, 0.4);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.2);
-  animation: modalIn 0.5s ease, hiddenShine 3s ease-in-out infinite;
-}
-
-@keyframes hiddenShine {
-  0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.15); }
-  50% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 60px rgba(255, 215, 0, 0.35); }
-}
-
-.hidden-memory-banner {
+.memory-glow {
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 0.5rem 1.5rem;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #1a1a00;
-  font-weight: 600;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  letter-spacing: 0.1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-  white-space: nowrap;
+  top: -50%;
+  left: -20%;
+  width: 140%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(167, 139, 250, 0.15) 0%, transparent 60%);
+  pointer-events: none;
 }
 
-.banner-star {
-  font-size: 0.9rem;
-  animation: twinkle 1.5s ease-in-out infinite;
+.memory-container.emotion-sad .memory-glow {
+  background: radial-gradient(ellipse, rgba(100, 100, 150, 0.15) 0%, transparent 60%);
 }
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+.memory-container.emotion-warm .memory-glow {
+  background: radial-gradient(ellipse, rgba(251, 191, 36, 0.12) 0%, transparent 60%);
 }
-
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+.memory-container.emotion-romantic .memory-glow {
+  background: radial-gradient(ellipse, rgba(244, 114, 182, 0.15) 0%, transparent 60%);
 }
-
-.memory-modal.emotion-sad {
-  border-color: rgba(100, 150, 255, 0.3);
+.memory-container.emotion-happy .memory-glow,
+.memory-container.emotion-sweet .memory-glow {
+  background: radial-gradient(ellipse, rgba(251, 191, 36, 0.15) 0%, transparent 60%);
 }
-
-.memory-modal.emotion-warm {
-  border-color: rgba(255, 180, 100, 0.3);
-}
-
-.memory-modal.emotion-romantic {
-  border-color: rgba(255, 100, 150, 0.3);
-}
-
-.memory-modal.emotion-happy {
-  border-color: rgba(255, 220, 100, 0.3);
-}
-
-.memory-modal.mood-despair {
-  background: linear-gradient(145deg, rgba(40, 20, 20, 0.95), rgba(30, 15, 15, 0.98));
-  border-color: rgba(100, 50, 50, 0.4);
-}
-
-.memory-modal.mood-gloomy {
-  background: linear-gradient(145deg, rgba(35, 35, 50, 0.95), rgba(25, 25, 40, 0.98));
-  border-color: rgba(80, 80, 120, 0.3);
-}
-
-.memory-modal.mood-calm {
-  background: linear-gradient(145deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
-  border-color: rgba(100, 120, 150, 0.3);
-}
-
-.memory-modal.mood-warm {
-  background: linear-gradient(145deg, rgba(50, 35, 25, 0.95), rgba(40, 28, 20, 0.98));
-  border-color: rgba(200, 140, 100, 0.3);
-}
-
-.memory-modal.mood-hopeful {
-  background: linear-gradient(145deg, rgba(50, 40, 20, 0.95), rgba(40, 32, 16, 0.98));
-  border-color: rgba(230, 180, 120, 0.4);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(230, 180, 120, 0.15);
-}
-
-.memory-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  margin-top: 0.5rem;
-}
-
-.memory-year {
-  color: #a0a0b0;
-  font-size: 0.9rem;
-  letter-spacing: 0.1rem;
-}
-
-.hidden-memory .memory-year {
-  color: #d4a574;
-}
-
-.memory-emoji {
-  font-size: 2rem;
-}
-
-.hidden-memory .memory-emoji {
-  animation: emoji-bounce 2s ease-in-out infinite;
-}
-
-@keyframes emoji-bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
-
-.memory-title {
-  font-size: clamp(1.3rem, 4vw, 1.8rem);
-  color: #e8e8f0;
-  margin-bottom: 1rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-.memory-title.hidden-title {
-  background: linear-gradient(135deg, #ffd700, #ffec8b, #ffd700);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.memory-divider {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  margin-bottom: 1.5rem;
-}
-
-.memory-divider.hidden-divider {
-  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.6), transparent);
-  height: 3px;
+.memory-container.emotion-touched .memory-glow {
+  background: radial-gradient(ellipse, rgba(192, 132, 252, 0.15) 0%, transparent 60%);
 }
 
 .memory-content {
-  color: #c0c0d0;
-  line-height: 2;
-  font-size: clamp(0.9rem, 2.6vw, 1.05rem);
-  text-align: justify;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.memory-emoji {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  animation: memory-emoji-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes memory-emoji-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.memory-title {
+  font-size: 1.4rem;
+  color: #e8e8f0;
+  margin: 0 0 1rem 0;
+  font-weight: 500;
+  letter-spacing: 0.08rem;
+}
+
+.memory-container.emotion-romantic .memory-title {
+  color: #f9a8d4;
+}
+.memory-container.emotion-warm .memory-title,
+.memory-container.emotion-happy .memory-title {
+  color: #fde68a;
+}
+.memory-container.emotion-sad .memory-title,
+.memory-container.emotion-regret .memory-title {
+  color: #94a3b8;
+}
+
+.memory-divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.6), transparent);
+  margin: 0 auto 1.5rem;
+}
+
+.memory-text-wrap {
   margin-bottom: 1.5rem;
+}
+
+.memory-text {
+  color: #c8c8d8;
+  line-height: 2.1;
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: justify;
   text-indent: 2em;
+  animation: memory-text-in 1s ease-out 0.2s both;
 }
 
-.memory-content.hidden-content {
-  color: #e8d5a8;
-  font-style: italic;
+@keyframes memory-text-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.memory-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
-  gap: 1rem;
+.memory-meta {
+  margin-bottom: 1.8rem;
 }
 
-.hidden-memory .memory-footer {
-  border-top-color: rgba(255, 215, 0, 0.2);
+.memory-tag {
+  display: inline-block;
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  background: rgba(167, 139, 250, 0.12);
+  color: #a78bfa;
+  border: 1px solid rgba(167, 139, 250, 0.25);
 }
 
-.memory-item-info {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  color: #a0a0b0;
+.memory-tag.tag-sad,
+.memory-tag.tag-regret,
+.memory-tag.tag-melancholy {
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+.memory-tag.tag-warm,
+.memory-tag.tag-happy,
+.memory-tag.tag-sweet {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.memory-tag.tag-romantic {
+  background: rgba(244, 114, 182, 0.12);
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.25);
+}
+
+.memory-tag.tag-touched {
+  background: rgba(192, 132, 252, 0.12);
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.25);
+}
+
+.memory-close-btn {
+  padding: 0.85rem 1.8rem;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(139, 92, 246, 0.2));
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  color: #c4b5fd;
+  border-radius: 30px;
   font-size: 0.9rem;
-}
-
-.item-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  align-items: flex-start;
-}
-
-.item-icon {
-  font-size: 1.8rem;
-}
-
-.item-tag {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
-  color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.3);
-}
-
-.close-btn {
-  padding: 0.8rem 1.8rem;
-  border: none;
-  border-radius: 25px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 1rem;
-  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
+  letter-spacing: 0.05rem;
 }
 
-.close-btn:hover {
+.memory-close-btn:hover {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.3), rgba(139, 92, 246, 0.3));
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 25px rgba(167, 139, 250, 0.25);
 }
 
-.close-btn:active {
-  transform: translateY(0);
+.memory-fade-enter-active,
+.memory-fade-leave-active {
+  transition: opacity 0.4s ease;
 }
 
-.close-btn.hidden-btn {
-  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
-  color: #1a1a00;
-  font-weight: 600;
+.memory-fade-enter-active .memory-container,
+.memory-fade-leave-active .memory-container {
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.close-btn.hidden-btn:hover {
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+.memory-fade-enter-from,
+.memory-fade-leave-to {
+  opacity: 0;
+}
+
+.memory-fade-enter-from .memory-container,
+.memory-fade-leave-to .memory-container {
+  transform: scale(0.85);
+  opacity: 0;
 }
 </style>
