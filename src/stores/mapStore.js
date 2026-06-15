@@ -30,6 +30,7 @@ export const useMapStore = defineStore('map', () => {
   const showClueTracker = ref(false)
   const showMemoryModal = ref(false)
   const currentMemory = ref(null)
+  const memoryQueue = ref([])
   const mapEnding = ref(null)
   const showEnding = ref(false)
   const unlockedByEvent = ref([])
@@ -291,8 +292,13 @@ export const useMapStore = defineStore('map', () => {
     if (!memory) return null
 
     triggeredMemories.value.push(memoryId)
-    currentMemory.value = memory
-    showMemoryModal.value = true
+
+    if (showMemoryModal.value) {
+      memoryQueue.value.push(memory)
+    } else {
+      currentMemory.value = memory
+      showMemoryModal.value = true
+    }
 
     checkAllUnlocks()
     return memory
@@ -301,6 +307,14 @@ export const useMapStore = defineStore('map', () => {
   function closeMemoryModal() {
     showMemoryModal.value = false
     currentMemory.value = null
+
+    if (memoryQueue.value.length > 0) {
+      const nextMemory = memoryQueue.value.shift()
+      setTimeout(() => {
+        currentMemory.value = nextMemory
+        showMemoryModal.value = true
+      }, 300)
+    }
   }
 
   function openClueTracker() {
@@ -362,6 +376,7 @@ export const useMapStore = defineStore('map', () => {
     showClueTracker.value = false
     showMemoryModal.value = false
     currentMemory.value = null
+    memoryQueue.value = []
     mapEnding.value = null
     showEnding.value = false
     unlockedByEvent.value = []

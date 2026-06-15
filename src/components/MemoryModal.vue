@@ -52,7 +52,8 @@ function getEmoji(emotion) {
     regret: '💔',
     melancholy: '🌧️',
     touched: '🥹',
-    determined: '💪'
+    determined: '💪',
+    heartbreak: '💔'
   }
   return map[emotion] || '💭'
 }
@@ -71,7 +72,8 @@ function getEmotionLabel(emotion) {
     regret: '遗憾',
     melancholy: '忧郁',
     touched: '感动',
-    determined: '坚定'
+    determined: '坚定',
+    heartbreak: '心碎'
   }
   return map[emotion] || '回忆'
 }
@@ -131,6 +133,9 @@ function getEmotionLabel(emotion) {
 .memory-container.emotion-touched .memory-glow {
   background: radial-gradient(ellipse, rgba(192, 132, 252, 0.15) 0%, transparent 60%);
 }
+.memory-container.emotion-heartbreak .memory-glow {
+  background: radial-gradient(ellipse, rgba(239, 68, 68, 0.15) 0%, transparent 60%);
+}
 
 .memory-content {
   position: relative;
@@ -171,8 +176,9 @@ function getEmotionLabel(emotion) {
   color: #fde68a;
 }
 .memory-container.emotion-sad .memory-title,
-.memory-container.emotion-regret .memory-title {
-  color: #94a3b8;
+.memory-container.emotion-regret .memory-title,
+.memory-container.emotion-heartbreak .memory-title {
+  color: #f87171;
 }
 
 .memory-divider {
@@ -227,6 +233,12 @@ function getEmotionLabel(emotion) {
   background: rgba(100, 116, 139, 0.15);
   color: #94a3b8;
   border-color: rgba(100, 116, 139, 0.3);
+}
+
+.memory-tag.tag-heartbreak {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .memory-tag.tag-warm,

@@ -57,7 +57,7 @@ export const mapLocations = [
       { id: 'map_mem_3', title: '杯口的口红印', content: '她喝咖啡的时候，杯口总会留下淡淡的口红印。你假装不看，却在她去洗手间的时候，偷偷把那个杯子转到自己面前。', emotion: 'warm', hint: '点一杯她最爱的拿铁' }
     ],
     events: ['evt_coffee_cup'],
-    clues: ['clue_cup', 'clue_ring']
+    clues: ['clue_cup', 'clue_ring', 'clue_key']
   },
   {
     id: 'park',
@@ -94,7 +94,8 @@ export const mapLocations = [
     unlockCondition: { type: 'visit', locationId: 'cafe_alley' },
     timePeriod: 'day,dusk,night',
     memories: [
-      { id: 'map_mem_5', title: '小王子和狐狸', content: '"你看，小王子和狐狸是最好的朋友。"她指着书页对你说，"你就是我的狐狸。""那你是我的玫瑰花吗？"你问。她脸红了，"才不是。"', emotion: 'touched', hint: '在外国文学区找《小王子》' }
+      { id: 'map_mem_5', title: '小王子和狐狸', content: '"你看，小王子和狐狸是最好的朋友。"她指着书页对你说，"你就是我的狐狸。""那你是我的玫瑰花吗？"你问。她脸红了，"才不是。"', emotion: 'touched', hint: '在外国文学区找《小王子》' },
+      { id: 'map_mem_5b', title: '退回的机票', content: '书的夹层里掉出一张机票——是五年前的，目的地是你的城市。机票上用红笔写着："我买了两张，一张是我的，一张是你的。我在车站等了一个小时，你没有来。"你仿佛能看到她攥着机票站在站台上的样子，眼泪一滴一滴砸在票面上。', emotion: 'heartbreak', hint: '翻开《小王子》第21页' }
     ],
     events: ['evt_book_page'],
     clues: ['clue_book', 'clue_bookmark']
@@ -157,7 +158,7 @@ export const mapLocations = [
       { id: 'map_mem_8', title: '紫藤花下', content: '"以后我们也要有个这样的院子。"她靠在你肩上，看着满墙的紫藤花，"种满花，养一只猫，再养一只狗。""好。"你轻声说，那时候你以为"以后"很快就会来。', emotion: 'melancholy', hint: '在紫藤架下多待一会儿' }
     ],
     events: ['evt_wind_chime'],
-    clues: ['clue_key', 'clue_notebook']
+    clues: ['clue_notebook']
   }
 ]
 
@@ -171,13 +172,13 @@ export const mapEvents = [
       {
         id: 'evt_clock_1',
         label: '尝试拨动指针',
-        result: '指针纹丝不动，你却在钟的背面发现了一行小字："等待是最长情的告白。"你的心被什么东西轻轻敲了一下。',
+        resultText: '指针纹丝不动，你却在钟的背面发现了一行小字："等待是最长情的告白。"你的心被什么东西轻轻敲了一下。',
         effects: { mood: 5, clue: 'clue_watch_hint' }
       },
       {
         id: 'evt_clock_2',
         label: '静静看着它',
-        result: '你看着停滞的指针，五年前的画面在眼前浮现。那个清晨，雾气比现在更浓，她的身影在雾气中越来越小......你深吸一口气，把眼眶里的湿润逼回去。',
+        resultText: '你看着停滞的指针，五年前的画面在眼前浮现。那个清晨，雾气比现在更浓，她的身影在雾气中越来越小......你深吸一口气，把眼眶里的湿润逼回去。',
         effects: { mood: -2, memory: 'map_mem_1' }
       }
     ],
@@ -193,13 +194,13 @@ export const mapEvents = [
       {
         id: 'evt_photo_1',
         label: '走进照相馆询问',
-        result: '店主是个慈祥的老人。"哦，你们啊，我记得。"他笑着说，"那年夏天，你们非要在雨中拍照，说什么"要记住这个湿漉漉的夏天"。这张照片，是她特意让我留在这里的，说万一有人来找，就给他。"老人递给你一个信封，"她说，给那个迟到了五年的傻瓜。"',
+        resultText: '店主是个慈祥的老人。"哦，你们啊，我记得。"他笑着说，"那年夏天，你们非要在雨中拍照，说什么"要记住这个湿漉漉的夏天"。这张照片，是她特意让我留在这里的，说万一有人来找，就给他。"老人递给你一个信封，"她说，给那个迟到了五年的傻瓜。"',
         effects: { mood: 8, clue: 'clue_photo' }
       },
       {
         id: 'evt_photo_2',
         label: '只是远远看着',
-        result: '你站在橱窗外，看着照片上笑得没心没肺的两个人。那年夏天的雨，那年夏天的风，都在照片里定格了。只是照片里的人，现在在哪里呢？',
+        resultText: '你站在橱窗外，看着照片上笑得没心没肺的两个人。那年夏天的雨，那年夏天的风，都在照片里定格了。只是照片里的人，现在在哪里呢？',
         effects: { mood: -3, memory: 'map_mem_2' }
       }
     ],
@@ -215,13 +216,13 @@ export const mapEvents = [
       {
         id: 'evt_cup_1',
         label: '坐下来，等她',
-        result: '你在那个熟悉的位置坐下。咖啡已经有些凉了，但你还是端起来喝了一口。还是那个味道，五年了，一点都没变。你不知道等了多久，当你抬起头的时候——窗外，雾气中，有一个熟悉的身影正在朝这里走来。',
+        resultText: '你在那个熟悉的位置坐下。咖啡已经有些凉了，但你还是端起来喝了一口。还是那个味道，五年了，一点都没变。你不知道等了多久，当你抬起头的时候——窗外，雾气中，有一个熟悉的身影正在朝这里走来。',
         effects: { mood: 12, clue: 'clue_cup', unlock: 'old_house' }
       },
       {
         id: 'evt_cup_2',
         label: '留下一张字条离开',
-        result: '你找了纸笔，写下"我来过，我还会再来"，压在咖啡杯下面。走出咖啡馆的时候，你听到身后传来急促的脚步声，但你没有回头。你害怕一回头，就再也迈不动脚步了。',
+        resultText: '你找了纸笔，写下"我来过，我还会再来"，压在咖啡杯下面。走出咖啡馆的时候，你听到身后传来急促的脚步声，但你没有回头。你害怕一回头，就再也迈不动脚步了。',
         effects: { mood: 2, clue: 'clue_cup_hint' }
       }
     ],
@@ -237,13 +238,13 @@ export const mapEvents = [
       {
         id: 'evt_tree_1',
         label: '仔细查看刻痕',
-        result: '你凑上前，拂去树皮上的青苔——两颗心的中间，整整齐齐刻着六个年份，一年不差。最后一个年份下面，有一行新刻的小字："我每年都来。今天，是第五年。"你的手开始颤抖。她来过，她每年都来。',
+        resultText: '你凑上前，拂去树皮上的青苔——两颗心的中间，整整齐齐刻着六个年份，一年不差。最后一个年份下面，有一行新刻的小字："我每年都来。今天，是第五年。"你的手开始颤抖。她来过，她每年都来。',
         effects: { mood: 15, clue: 'clue_tree_initial' }
       },
       {
         id: 'evt_tree_2',
         label: '轻轻抚摸树干',
-        result: '你把手贴在粗糙的树皮上，仿佛能感受到这些年来它见证的一切——春日的新芽，夏日的浓荫，秋日的落叶，冬日的雪。还有，每年都会有一个人，来到这棵树下，站很久很久。',
+        resultText: '你把手贴在粗糙的树皮上，仿佛能感受到这些年来它见证的一切——春日的新芽，夏日的浓荫，秋日的落叶，冬日的雪。还有，每年都会有一个人，来到这棵树下，站很久很久。',
         effects: { mood: 4, memory: 'map_mem_4' }
       }
     ],
@@ -259,13 +260,13 @@ export const mapEvents = [
       {
         id: 'evt_book_1',
         label: '读那行小字',
-        result: '你凑近看，字迹很熟悉——是她的字："给我的狐狸：当你看到这一页的时候，我应该已经在去机场的路上了。但我想告诉你——我买了两张票，一张是我的，一张是你的。我在车站等了一个小时，你没有来。我不怪你，我只是想让你知道，我从来没有怪过你。永远爱你的，玫瑰花。"书的夹层里，是一张五年前被退回的机票。',
-        effects: { mood: -5, clue: 'clue_book', specialMemory: true }
+        resultText: '你凑近看，字迹很熟悉——是她的字："给我的狐狸：当你看到这一页的时候，我应该已经在去机场的路上了。但我想告诉你——我买了两张票，一张是我的，一张是你的。我在车站等了一个小时，你没有来。我不怪你，我只是想让你知道，我从来没有怪过你。永远爱你的，玫瑰花。"书的夹层里，是一张五年前被退回的机票。',
+        effects: { mood: -5, clue: 'clue_book', memory: 'map_mem_5b' }
       },
       {
         id: 'evt_book_2',
         label: '合上书，放回原位',
-        result: '你把书合上，放回原来的位置。有些真相，也许还需要更多的勇气去面对。但你知道，你一定会回来的。',
+        resultText: '你把书合上，放回原来的位置。有些真相，也许还需要更多的勇气去面对。但你知道，你一定会回来的。',
         effects: { mood: 0, clue: 'clue_book_hint' }
       }
     ],
@@ -281,13 +282,13 @@ export const mapEvents = [
       {
         id: 'evt_bottle_1',
         label: '打开瓶子，取出纸条',
-        result: '你打开漂流瓶，取出里面的纸条。你的字迹还在：希望十年后我们还在一起。但纸条的背面，多了一行字——是她后来写的："五年了，我回来了。瓶子居然还在，这一定是命运吧。如果你也看到了这张纸条，就来湖畔的老地方。我会一直等，等到你来为止。"信的末尾是一个日期，就是今天。你猛然抬头——雾气中，有一个身影正站在湖畔。',
+        resultText: '你打开漂流瓶，取出里面的纸条。你的字迹还在：希望十年后我们还在一起。但纸条的背面，多了一行字——是她后来写的："五年了，我回来了。瓶子居然还在，这一定是命运吧。如果你也看到了这张纸条，就来湖畔的老地方。我会一直等，等到你来为止。"信的末尾是一个日期，就是今天。你猛然抬头——雾气中，有一个身影正站在湖畔。',
         effects: { mood: 20, clue: 'clue_bottle', ending: 'map_ending_reunion' }
       },
       {
         id: 'evt_bottle_2',
         label: '把瓶子放回水里',
-        result: '你把瓶子轻轻放回湖里，看着它随波漂远。也许，有些愿望需要更多的时间才能实现。但你知道，你已经离真相越来越近了。',
+        resultText: '你把瓶子轻轻放回湖里，看着它随波漂远。也许，有些愿望需要更多的时间才能实现。但你知道，你已经离真相越来越近了。',
         effects: { mood: 3, clue: 'clue_bottle_hint' }
       }
     ],
@@ -303,13 +304,13 @@ export const mapEvents = [
       {
         id: 'evt_bell_1',
         label: '闭上眼睛，许愿',
-        result: '你闭上眼睛，在心里默念着那个许了无数次的愿望。钟声停止的时候，你睁开眼——钟楼的台阶上，坐着一个人。她抬起头，看到你，笑了："你终于来了。我等这钟声，等了五年。"',
+        resultText: '你闭上眼睛，在心里默念着那个许了无数次的愿望。钟声停止的时候，你睁开眼——钟楼的台阶上，坐着一个人。她抬起头，看到你，笑了："你终于来了。我等这钟声，等了五年。"',
         effects: { mood: 25, ending: 'map_ending_tower' }
       },
       {
         id: 'evt_bell_2',
         label: '顺着钟声的方向走去',
-        result: '你朝着钟声传来的方向走去。雾越来越浓，但你不再害怕。因为你知道，钟声的尽头，一定有她在等你。',
+        resultText: '你朝着钟声传来的方向走去。雾越来越浓，但你不再害怕。因为你知道，钟声的尽头，一定有她在等你。',
         effects: { mood: 8, clue: 'clue_final' }
       }
     ],
@@ -325,13 +326,13 @@ export const mapEvents = [
       {
         id: 'evt_wind_1',
         label: '推开那扇门',
-        result: '你的手放在门把手上，冰凉的金属让你打了个寒颤。门没有锁。你轻轻一推——"你来了。"她站在客厅里，背对着你，正在浇花。"我每天都给花浇水，"她的声音有些颤抖，"我知道你一定会来的。"她转过身，泪流满面，却笑得像个少女："欢迎回家。"',
+        resultText: '你的手放在门把手上，冰凉的金属让你打了个寒颤。门没有锁。你轻轻一推——"你来了。"她站在客厅里，背对着你，正在浇花。"我每天都给花浇水，"她的声音有些颤抖，"我知道你一定会来的。"她转过身，泪流满面，却笑得像个少女："欢迎回家。"',
         effects: { mood: 30, ending: 'map_ending_home' }
       },
       {
         id: 'evt_wind_2',
         label: '在院子里等',
-        result: '你坐在紫藤架下的秋千上，轻轻摇晃。风铃叮咚，花香萦绕。你不知道等了多久，但你愿意等。因为五年都等过来了，不在乎再多等一会儿。',
+        resultText: '你坐在紫藤架下的秋千上，轻轻摇晃。风铃叮咚，花香萦绕。你不知道等了多久，但你愿意等。因为五年都等过来了，不在乎再多等一会儿。',
         effects: { mood: 6, memory: 'map_mem_8' }
       }
     ],
@@ -492,6 +493,51 @@ export const mapClues = [
     locationId: 'old_house',
     category: '物品',
     importance: 'key'
+  },
+  {
+    id: 'clue_watch_hint',
+    name: '钟背的刻字',
+    icon: '✍️',
+    description: '时钟背面刻着一行小字："等待是最长情的告白。"笔触很轻，却刻得很深。',
+    locationId: 'station',
+    category: '线索',
+    importance: 'normal'
+  },
+  {
+    id: 'clue_cup_hint',
+    name: '留下的字条',
+    icon: '📝',
+    description: '"我来过，我还会再来。"字迹匆忙，却带着一丝坚定。她真的一直在等。',
+    locationId: 'cafe_alley',
+    category: '线索',
+    importance: 'normal'
+  },
+  {
+    id: 'clue_tree_initial',
+    name: '树下的年份',
+    icon: '🌲',
+    description: '刻在两颗心中间的六个年份，一年不差。她每年都来，每年都刻下一个年份。',
+    locationId: 'park',
+    category: '线索',
+    importance: 'key'
+  },
+  {
+    id: 'clue_book_hint',
+    name: '折角的书页',
+    icon: '📄',
+    description: '《小王子》第21页被折起了一角。"只有用心才能看得清楚"——这句话被红笔圈了起来。',
+    locationId: 'bookstore',
+    category: '线索',
+    importance: 'normal'
+  },
+  {
+    id: 'clue_bottle_hint',
+    name: '瓶中的一瞥',
+    icon: '🌫️',
+    description: '你瞥见瓶中似乎有两张纸条，但还没有勇气打开。也许，下次吧。',
+    locationId: 'lake',
+    category: '线索',
+    importance: 'normal'
   }
 ]
 
