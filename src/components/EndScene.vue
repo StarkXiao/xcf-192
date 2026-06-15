@@ -345,7 +345,8 @@
           <div class="journal-hint">
             <span class="hint-icon">📔</span>
             整理你的回忆图鉴
-            <button class="hint-btn journal-hint-btn" @click="openJournal">翻看手账</button>
+            <button class="hint-btn journal-hint-btn" @click="openJournalEditor">✨ 手账编辑器</button>
+            <button class="hint-btn" @click="openJournal">查看手账</button>
           </div>
 
           <div class="branch-continue" v-if="hasBranches">
@@ -715,6 +716,10 @@ function openArchive() {
 
 function openJournal() {
   gameStore.openJournal()
+}
+
+function openJournalEditor() {
+  gameStore.openJournalEditor()
 }
 
 function loadBranch(branchId) {

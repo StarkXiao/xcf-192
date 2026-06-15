@@ -45,6 +45,7 @@ export const useGameStore = defineStore('game', () => {
   const showFakeClueModal = ref(false)
   const currentFakeClue = ref(null)
   const recentlyUnlockedFogItems = ref([])
+  const showJournalEditor = ref(false)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -1007,6 +1008,14 @@ export const useGameStore = defineStore('game', () => {
     showJournalModal.value = false
   }
 
+  function openJournalEditor() {
+    showJournalEditor.value = true
+  }
+
+  function closeJournalEditor() {
+    showJournalEditor.value = false
+  }
+
   return {
     gameState,
     currentSceneId,
@@ -1133,6 +1142,9 @@ export const useGameStore = defineStore('game', () => {
     closeMemoryArchive,
     openJournal,
     closeJournal,
+    showJournalEditor,
+    openJournalEditor,
+    closeJournalEditor,
     checkChapterProgress,
     advanceChapter,
     closeChapterNarration,

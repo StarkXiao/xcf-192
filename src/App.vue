@@ -13,6 +13,7 @@
     <LeaderboardModal />
     <BadgeModal />
     <MemoryArchiveModal />
+    <JournalEditor />
   </div>
 </template>
 
@@ -27,6 +28,7 @@ import MapExplore from './components/MapExplore.vue'
 import BackgroundMusic from './components/BackgroundMusic.vue'
 import ArchiveModal from './components/ArchiveModal.vue'
 import JournalModal from './components/JournalModal.vue'
+import JournalEditor from './components/JournalEditor.vue'
 import KeyChoiceModal from './components/KeyChoiceModal.vue'
 import LeaderboardModal from './components/LeaderboardModal.vue'
 import BadgeModal from './components/BadgeModal.vue'
