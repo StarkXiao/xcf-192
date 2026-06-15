@@ -106,11 +106,17 @@
           </Transition>
         </div>
 
-        <div class="stage-subtitle-bar" v-if="currentShot?.type === 'narration' && displayedSubtitle">
-          <div class="subtitle-content">
-            <span class="subtitle-text">{{ displayedSubtitle }}</span>
+        <Transition name="subtitle-fade" mode="out-in">
+          <div
+            v-if="currentShot?.type === 'narration' && displayedSubtitle"
+            :key="currentShotIndex"
+            class="stage-subtitle-bar"
+          >
+            <div class="subtitle-content">
+              <span class="subtitle-text">{{ displayedSubtitle }}</span>
+            </div>
           </div>
-        </div>
+        </Transition>
 
         <div class="stage-hud">
           <div class="hud-left">
@@ -310,6 +316,7 @@ function playCurrentShot() {
   applyTheaterMusic(shot.music)
 
   if (shot.type === 'narration' && shot.narration) {
+    displayedSubtitle.value = shot.narration
     startTypewriter(shot.narration)
   }
 
@@ -1107,6 +1114,21 @@ onUnmounted(() => {
   font-size: 0.95rem;
   letter-spacing: 0.05rem;
   line-height: 1.6;
+}
+
+.subtitle-fade-enter-active,
+.subtitle-fade-leave-active {
+  transition: all 0.4s ease;
+}
+
+.subtitle-fade-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+}
+
+.subtitle-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-5px);
 }
 
 .stage-hud {
