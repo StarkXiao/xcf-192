@@ -412,6 +412,7 @@ import { useArchiveStore } from '../stores/archiveStore'
 import { useTimeStore, GAME_START_HOUR, GAME_TOTAL_HOURS } from '../stores/timeStore'
 import { useChallengeStore, CHALLENGE_BADGES } from '../stores/challengeStore'
 import { useCollectionStore } from '../stores/collectionStore'
+import { useGrowthStore } from '../stores/growthStore'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -419,6 +420,7 @@ const archiveStore = useArchiveStore()
 const timeStore = useTimeStore()
 const challengeStore = useChallengeStore()
 const collectionStore = useCollectionStore()
+const growthStore = useGrowthStore()
 
 const showIntro = ref(true)
 
@@ -427,6 +429,8 @@ onMounted(() => {
   setTimeout(() => {
     showIntro.value = false
   }, introDuration)
+  
+  recordGameToGrowth()
 })
 
 const timeUsed = ref(300 - gameStore.timeRemaining)
@@ -754,6 +758,30 @@ const collectionProgress = computed(() => collectionStore.overallProgress)
 const hasTheaterContent = computed(() => {
   return triggeredMemories.value > 0 || unlockedHM.value > 0 || archiveHM.value > 0
 })
+
+function recordGameToGrowth() {
+  const timeUsedVal = 300 - gameStore.timeRemaining
+  const foundCountVal = gameStore.foundCount
+  const memoryCountVal = gameStore.triggeredMemories.length
+  const craftedCountVal = gameStore.craftedCount
+  const hiddenCountVal = gameStore.foundHiddenItemsCount
+  const isPerfect = foundCountVal >= gameStore.totalItems
+  const endingType = gameStore.endingData?.type || 'neutral'
+  
+  const visitedScenesArr = [gameStore.currentSceneId]
+  
+  growthStore.recordGameEnd({
+    timeUsed: timeUsedVal,
+    foundCount: foundCountVal,
+    memoryCount: memoryCountVal,
+    craftedCount: craftedCountVal,
+    hiddenCount: hiddenCountVal,
+    isPerfect,
+    visitedScenes: visitedScenesArr,
+    endingType,
+    locationStats: {}
+  })
+}
 
 function loadBranch(branchId) {
   gameStore.startGameFromBranch(branchId)

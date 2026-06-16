@@ -79,6 +79,9 @@
           <button class="btn btn-badges half-btn" @click="openBadges">
             🎖️ 徽章 ({{ badgesCount }})
           </button>
+          <button class="btn btn-growth half-btn" @click="openGrowthCenter">
+            🌱 成长中心 ({{ growthProgress }}%)
+          </button>
         </div>
       </div>
 
@@ -96,6 +99,7 @@ import { useChallengeStore } from '../stores/challengeStore'
 import { useMapStore } from '../stores/mapStore'
 import { usePrologueStore } from '../stores/prologueStore'
 import { useCollectionStore } from '../stores/collectionStore'
+import { useGrowthStore } from '../stores/growthStore'
 
 const gameStore = useGameStore()
 const saveStore = useSaveStore()
@@ -104,6 +108,7 @@ const challengeStore = useChallengeStore()
 const mapStore = useMapStore()
 const prologueStore = usePrologueStore()
 const collectionStore = useCollectionStore()
+const growthStore = useGrowthStore()
 
 const hasSave = saveStore.hasSave
 
@@ -126,6 +131,8 @@ const todayDate = computed(() => challengeStore.todayDate)
 const challengeStreak = computed(() => challengeStore.challengeStreak)
 const badgesCount = computed(() => challengeStore.unlockedBadgesCount)
 const totalBadges = computed(() => challengeStore.totalBadgesCount)
+
+const growthProgress = computed(() => growthStore.achievementProgressPercent)
 
 onMounted(() => {
   saveStore.checkHasSave()
@@ -173,6 +180,10 @@ function openBadges() {
 
 function openCollectionRoom() {
   collectionStore.openCollectionRoom()
+}
+
+function openGrowthCenter() {
+  growthStore.openGrowthCenter()
 }
 
 function startMapExplore() {
@@ -522,6 +533,18 @@ function startPrologue() {
 .btn-badges:hover {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(109, 40, 217, 0.3));
   box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-growth {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.2));
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #bbf7d0;
+}
+
+.btn-growth:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.5), rgba(16, 185, 129, 0.3));
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
   transform: translateY(-2px);
 }
 
