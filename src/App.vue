@@ -18,7 +18,6 @@
     <JournalEditor />
     <LetterSystemModal />
     <CollectionRoom />
-    <GrowthCenter />
   </div>
 </template>
 
@@ -43,17 +42,10 @@ import MemoryArchiveModal from './components/MemoryArchiveModal.vue'
 import MemoryTheater from './components/MemoryTheater.vue'
 import LetterSystemModal from './components/LetterSystemModal.vue'
 import CollectionRoom from './components/CollectionRoom.vue'
-import GrowthCenter from './components/GrowthCenter.vue'
-import { useGrowthStore } from './stores/growthStore'
 
 const gameStore = useGameStore()
 const mapStore = useMapStore()
 const prologueStore = usePrologueStore()
-const growthStore = useGrowthStore()
-
-growthStore.initDependencies()
-growthStore.init()
-
 const gameState = computed(() => gameStore.gameState)
 const isMapMode = computed(() => mapStore.isMapMode)
 const isPrologueMode = computed(() => prologueStore.isActive)

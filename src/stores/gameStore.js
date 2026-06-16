@@ -9,6 +9,7 @@ import { useMusicStore } from './musicStore'
 import { useChallengeStore } from './challengeStore'
 import { useLetterStore } from './letterStore'
 import { useCollectionStore } from './collectionStore'
+import { useCharacterStore } from './characterStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -49,6 +50,9 @@ export const useGameStore = defineStore('game', () => {
   const recentlyUnlockedFogItems = ref([])
   const showJournalEditor = ref(false)
   const showMemoryTheater = ref(false)
+  const showCharacterProfile = ref(false)
+  const newlyUnlockedCharacters = ref([])
+  const showCharacterUnlockNotice = ref(false)
 
   const storyStore = useStoryStore()
   const saveStore = useSaveStore()
@@ -59,6 +63,39 @@ export const useGameStore = defineStore('game', () => {
   const challengeStore = useChallengeStore()
   const letterStore = useLetterStore()
   const collectionStore = useCollectionStore()
+  const characterStore = useCharacterStore()
+
+  function checkCharacterUnlocks() {
+    const gameState = {
+      triggeredMemories: triggeredMemories.value,
+      unlockedHiddenMemories: unlockedHiddenMemories.value,
+      foundHiddenItems: foundHiddenItems.value,
+      madeChoices: madeChoices.value,
+      currentChapterId: currentChapterId.value,
+      craftedItems: craftedItems.value,
+      moodValue: moodValue.value
+    }
+    const newUnlocks = characterStore.checkNewUnlocks(gameState)
+    if (newUnlocks.length > 0) {
+      newlyUnlockedCharacters.value = [...newlyUnlockedCharacters.value, ...newUnlocks]
+      showCharacterUnlockNotice.value = true
+      setTimeout(() => {
+        showCharacterUnlockNotice.value = false
+        newlyUnlockedCharacters.value = []
+      }, 4000)
+    }
+    return newUnlocks
+  }
+
+  function openCharacterProfileModal() {
+    showCharacterProfile.value = true
+    pauseGame()
+  }
+
+  function closeCharacterProfileModal() {
+    showCharacterProfile.value = false
+    resumeGame()
+  }
 
   function initLetterCallbacks() {
     letterStore.setMoodCallback((emotion) => {
@@ -289,6 +326,7 @@ export const useGameStore = defineStore('game', () => {
       checkGameComplete()
     }
 
+    checkCharacterUnlocks()
     saveProgress()
   }
 
@@ -356,6 +394,9 @@ export const useGameStore = defineStore('game', () => {
     } else {
       resetGame()
     }
+    
+    characterStore.loadFromArchive()
+    
     gameState.value = 'playing'
     startTimer()
     timeStore.startTimeFlow()
@@ -475,6 +516,7 @@ export const useGameStore = defineStore('game', () => {
     moodStore.resetMood()
     timeStore.resetTime()
     letterStore.resetLetterSystem()
+    characterStore.resetCharacterStore()
     saveStore.clearSave()
   }
 
@@ -546,6 +588,7 @@ export const useGameStore = defineStore('game', () => {
       archiveToGlobal()
       saveProgress()
       checkChapterProgress()
+      checkCharacterUnlocks()
       checkGameComplete()
 
       musicStore.updateContext({
@@ -723,6 +766,7 @@ export const useGameStore = defineStore('game', () => {
     keyChoiceResult.value = option
     showKeyChoiceResult.value = true
     saveProgress()
+    checkCharacterUnlocks()
 
     return { success: true, resultText: option.resultText }
   }
@@ -809,6 +853,7 @@ export const useGameStore = defineStore('game', () => {
     archiveToGlobal()
     saveProgress()
     checkChapterProgress()
+    checkCharacterUnlocks()
     checkGameComplete()
     return craftedItem
   }
@@ -1228,6 +1273,21 @@ export const useGameStore = defineStore('game', () => {
     letterHasMadeChoice: (choiceId) => letterStore.hasMadeChoice(choiceId),
     letterCloseModal: () => letterStore.closeLetterModal(),
     letterCloseReply: () => letterStore.closeReplyModal(),
-    letterCloseEnding: () => letterStore.closeEndingModal()
+    letterCloseEnding: () => letterStore.closeEndingModal(),
+    showCharacterProfile,
+    newlyUnlockedCharacters,
+    showCharacterUnlockNotice,
+    checkCharacterUnlocks,
+    openCharacterProfileModal,
+    closeCharacterProfileModal,
+    triggeredMemories,
+    unlockedHiddenMemories,
+    foundHiddenItems,
+    madeChoices,
+    currentChapterId,
+    craftedItems,
+    moodValue
   }
+
+  return returnObj
 })

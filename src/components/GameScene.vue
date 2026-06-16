@@ -350,6 +350,26 @@
     <MemoryModal />
     <CraftingModal />
     <ChapterNarration />
+    
+    <Transition name="fade">
+      <div v-if="showCharacterProfile" class="character-modal-overlay" @click.self="closeCharacterProfile">
+        <div class="character-modal-content">
+          <button class="character-modal-close" @click="closeCharacterProfile">✕</button>
+          <CharacterProfile />
+        </div>
+      </div>
+    </Transition>
+    
+    <Transition name="slide-up">
+      <div v-if="showCharacterUnlockNotice && newlyUnlockedCharacters.length > 0" class="character-unlock-notice">
+        <div class="cun-icon">🎉</div>
+        <div class="cun-content">
+          <span class="cun-title">新人物档案解锁！</span>
+          <span class="cun-names">{{ newlyUnlockedCharacters.map(c => c.name).join('、') }}</span>
+        </div>
+        <button class="cun-btn" @click="openCharacterProfileFromNotice">查看</button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -362,6 +382,7 @@ import Timer from './Timer.vue'
 import MemoryModal from './MemoryModal.vue'
 import CraftingModal from './CraftingModal.vue'
 import ChapterNarration from './ChapterNarration.vue'
+import CharacterProfile from './CharacterProfile.vue'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -419,6 +440,10 @@ const isAnyFogItemRecentlyUnlocked = computed(() => gameStore.isAnyFogItemRecent
 const isLetterSystemUnlocked = computed(() => gameStore.isLetterSystemUnlocked)
 const letterCurrentRound = computed(() => gameStore.letterCurrentRound)
 const isLetterEndingReached = computed(() => gameStore.isLetterEndingReached)
+
+const showCharacterProfile = computed(() => gameStore.showCharacterProfile)
+const showCharacterUnlockNotice = computed(() => gameStore.showCharacterUnlockNotice)
+const newlyUnlockedCharacters = computed(() => gameStore.newlyUnlockedCharacters)
 
 const sceneDescriptionStyle = computed(() => {
   const tone = textTone.value
@@ -520,6 +545,17 @@ function handleFakeClueClick(fakeClue) {
 
 function closeFakeClueModal() {
   gameStore.closeFakeClueModal()
+}
+
+function closeCharacterProfile() {
+  gameStore.closeCharacterProfileModal()
+}
+
+function openCharacterProfileFromNotice() {
+  gameStore.closeCharacterProfileModal()
+  setTimeout(() => {
+    gameStore.openCharacterProfileModal()
+  }, 300)
 }
 
 function isItemFogHidden(itemId) {
@@ -2082,5 +2118,154 @@ function getStarStyle(index) {
 .hint-tooltip-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(5px);
+}
+
+.character-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.character-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  background: linear-gradient(180deg, #1f1830 0%, #1a1520 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: characterModalIn 0.4s ease-out;
+}
+
+@keyframes characterModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.character-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: #a0a0b0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.character-modal-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+}
+
+.character-unlock-notice {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
+  border: 1px solid rgba(165, 180, 252, 0.5);
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 2000;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+  animation: noticeSlideUp 0.5s ease-out;
+}
+
+@keyframes noticeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.cun-icon {
+  font-size: 2rem;
+}
+
+.cun-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cun-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.cun-names {
+  font-size: 0.8rem;
+  color: #c7d2fe;
+}
+
+.cun-btn {
+  padding: 0.5rem 1.2rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cun-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(30px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

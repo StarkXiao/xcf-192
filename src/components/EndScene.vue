@@ -366,6 +366,17 @@
             </button>
           </div>
 
+          <div class="character-hint">
+            <span class="hint-icon">👤</span>
+            人物侧写·成长轨迹·关系图谱
+            <button class="hint-btn character-hint-btn" @click="openCharacterProfile">
+              <span class="ch-hint-progress">
+                {{ characterProgress }}%
+              </span>
+              人物档案
+            </button>
+          </div>
+
           <div class="branch-continue" v-if="hasBranches">
             <h4 class="branch-title">🌿 从分支存档继续</h4>
             <div class="branch-list">
@@ -412,7 +423,7 @@ import { useArchiveStore } from '../stores/archiveStore'
 import { useTimeStore, GAME_START_HOUR, GAME_TOTAL_HOURS } from '../stores/timeStore'
 import { useChallengeStore, CHALLENGE_BADGES } from '../stores/challengeStore'
 import { useCollectionStore } from '../stores/collectionStore'
-import { useGrowthStore } from '../stores/growthStore'
+import { useCharacterStore } from '../stores/characterStore'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -420,7 +431,7 @@ const archiveStore = useArchiveStore()
 const timeStore = useTimeStore()
 const challengeStore = useChallengeStore()
 const collectionStore = useCollectionStore()
-const growthStore = useGrowthStore()
+const characterStore = useCharacterStore()
 
 const showIntro = ref(true)
 
@@ -429,8 +440,6 @@ onMounted(() => {
   setTimeout(() => {
     showIntro.value = false
   }, introDuration)
-  
-  recordGameToGrowth()
 })
 
 const timeUsed = ref(300 - gameStore.timeRemaining)
@@ -755,33 +764,15 @@ function openCollectionRoom() {
 
 const collectionProgress = computed(() => collectionStore.overallProgress)
 
+function openCharacterProfile() {
+  gameStore.openCharacterProfileModal()
+}
+
+const characterProgress = computed(() => characterStore.overallProgress)
+
 const hasTheaterContent = computed(() => {
   return triggeredMemories.value > 0 || unlockedHM.value > 0 || archiveHM.value > 0
 })
-
-function recordGameToGrowth() {
-  const timeUsedVal = 300 - gameStore.timeRemaining
-  const foundCountVal = gameStore.foundCount
-  const memoryCountVal = gameStore.triggeredMemories.length
-  const craftedCountVal = gameStore.craftedCount
-  const hiddenCountVal = gameStore.foundHiddenItemsCount
-  const isPerfect = foundCountVal >= gameStore.totalItems
-  const endingType = gameStore.endingData?.type || 'neutral'
-  
-  const visitedScenesArr = [gameStore.currentSceneId]
-  
-  growthStore.recordGameEnd({
-    timeUsed: timeUsedVal,
-    foundCount: foundCountVal,
-    memoryCount: memoryCountVal,
-    craftedCount: craftedCountVal,
-    hiddenCount: hiddenCountVal,
-    isPerfect,
-    visitedScenes: visitedScenesArr,
-    endingType,
-    locationStats: {}
-  })
-}
 
 function loadBranch(branchId) {
   gameStore.startGameFromBranch(branchId)
@@ -1898,6 +1889,39 @@ function openBadgesFromEnd() {
 .cr-hint-progress {
   padding: 0.1rem 0.5rem;
   background: rgba(251, 191, 36, 0.2);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.character-hint {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.04));
+  border: 1px solid rgba(102, 126, 234, 0.25);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #a0a0b0;
+}
+
+.character-hint-btn {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.15));
+  color: #a5b4fc;
+  border-color: rgba(102, 126, 234, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.ch-hint-progress {
+  padding: 0.1rem 0.5rem;
+  background: rgba(102, 126, 234, 0.2);
   border-radius: 10px;
   font-size: 0.75rem;
   font-weight: 700;
