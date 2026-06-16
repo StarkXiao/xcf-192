@@ -68,6 +68,10 @@
           ✉️
           <span v-if="!isLetterEndingReached && letterCurrentRound > 0" class="letter-badge">第{{ letterCurrentRound }}封</span>
         </button>
+        <button class="menu-btn radio-btn" @click="openRadioPanel" :title="'雾城夜话'">
+          📻
+          <span v-if="radioActiveQuestsCount > 0" class="radio-badge">{{ radioActiveQuestsCount }}</span>
+        </button>
         <button class="menu-btn crafting-btn" @click="openCraftingPanel" :title="'旧物合成'">
           ✨
           <span v-if="availableRecipesCount > 0" class="craft-badge">{{ availableRecipesCount }}</span>
@@ -281,6 +285,9 @@
             <button v-if="isLetterSystemUnlocked" class="menu-btn-item letter-menu-btn" @click="openLetterFromMenu">
               ✉️ 雾城来信
             </button>
+            <button class="menu-btn-item radio-menu-btn" @click="openRadioFromMenu">
+              📻 雾城夜话电台
+            </button>
             <button class="menu-btn-item craft-menu-btn" @click="openCraftingFromMenu">
               ✨ 旧物合成工坊
             </button>
@@ -350,6 +357,7 @@
     <MemoryModal />
     <CraftingModal />
     <ChapterNarration />
+    <RadioPlayer @close="closeRadio" />
     
     <Transition name="fade">
       <div v-if="showCharacterProfile" class="character-modal-overlay" @click.self="closeCharacterProfile">
@@ -383,6 +391,7 @@ import MemoryModal from './MemoryModal.vue'
 import CraftingModal from './CraftingModal.vue'
 import ChapterNarration from './ChapterNarration.vue'
 import CharacterProfile from './CharacterProfile.vue'
+import RadioPlayer from './RadioPlayer.vue'
 
 const gameStore = useGameStore()
 const storyStore = useStoryStore()
@@ -440,6 +449,11 @@ const isAnyFogItemRecentlyUnlocked = computed(() => gameStore.isAnyFogItemRecent
 const isLetterSystemUnlocked = computed(() => gameStore.isLetterSystemUnlocked)
 const letterCurrentRound = computed(() => gameStore.letterCurrentRound)
 const isLetterEndingReached = computed(() => gameStore.isLetterEndingReached)
+
+const isRadioOpen = computed(() => gameStore.isRadioOpen)
+const radioActiveQuestsCount = computed(() => gameStore.radioActiveQuestsCount)
+const radioTotalHeardFragments = computed(() => gameStore.radioTotalHeardFragments)
+const radioTotalHeardRumors = computed(() => gameStore.radioTotalHeardRumors)
 
 const showCharacterProfile = computed(() => gameStore.showCharacterProfile)
 const showCharacterUnlockNotice = computed(() => gameStore.showCharacterUnlockNotice)
@@ -551,6 +565,10 @@ function closeCharacterProfile() {
   gameStore.closeCharacterProfileModal()
 }
 
+function closeRadio() {
+  gameStore.closeRadio()
+}
+
 function openCharacterProfileFromNotice() {
   gameStore.closeCharacterProfileModal()
   setTimeout(() => {
@@ -608,6 +626,15 @@ function openLetterPanel() {
 function openLetterFromMenu() {
   showMenu.value = false
   gameStore.openLetterSystem()
+}
+
+function openRadioPanel() {
+  gameStore.openRadio()
+}
+
+function openRadioFromMenu() {
+  showMenu.value = false
+  gameStore.openRadio()
 }
 
 function openMemoryArchiveFromMenu() {
@@ -1024,6 +1051,35 @@ function getStarStyle(index) {
   padding: 0 6px;
   border-radius: 10px;
   background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.radio-btn {
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, rgba(129, 199, 132, 0.3), rgba(56, 142, 60, 0.2));
+  border-color: rgba(129, 199, 132, 0.4);
+}
+
+.radio-btn:hover {
+  background: linear-gradient(135deg, rgba(129, 199, 132, 0.5), rgba(56, 142, 60, 0.3));
+  box-shadow: 0 0 15px rgba(129, 199, 132, 0.3);
+}
+
+.radio-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #66bb6a, #388e3c);
   color: white;
   font-size: 0.65rem;
   font-weight: bold;
@@ -1490,6 +1546,16 @@ function getStarStyle(index) {
 
 .craft-menu-btn:hover {
   background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), rgba(212, 165, 116, 0.3));
+}
+
+.radio-menu-btn {
+  background: linear-gradient(135deg, rgba(129, 199, 132, 0.3), rgba(56, 142, 60, 0.2));
+  border: 1px solid rgba(129, 199, 132, 0.3);
+  color: #a5d6a7;
+}
+
+.radio-menu-btn:hover {
+  background: linear-gradient(135deg, rgba(129, 199, 132, 0.5), rgba(56, 142, 60, 0.3));
 }
 
 .journal-menu-btn {

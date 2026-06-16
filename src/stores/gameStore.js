@@ -10,6 +10,7 @@ import { useChallengeStore } from './challengeStore'
 import { useLetterStore } from './letterStore'
 import { useCollectionStore } from './collectionStore'
 import { useCharacterStore } from './characterStore'
+import { useRadioStore } from './radioStore'
 
 export const useGameStore = defineStore('game', () => {
   const gameState = ref('start')
@@ -64,6 +65,7 @@ export const useGameStore = defineStore('game', () => {
   const letterStore = useLetterStore()
   const collectionStore = useCollectionStore()
   const characterStore = useCharacterStore()
+  const radioStore = useRadioStore()
 
   function checkCharacterUnlocks() {
     const gameState = {
@@ -391,6 +393,9 @@ export const useGameStore = defineStore('game', () => {
       if (savedGame.challengeMode) {
         challengeStore.startChallengeMode()
       }
+      if (savedGame.radioData) {
+        radioStore.loadSaveData(savedGame.radioData)
+      }
     } else {
       resetGame()
     }
@@ -443,6 +448,7 @@ export const useGameStore = defineStore('game', () => {
       triggeredFakeClues: [...triggeredFakeClues.value],
       moodData: moodStore.getSaveData(),
       timeData: timeStore.getSaveData(),
+      radioData: radioStore.getSaveData(),
       challengeMode: true
     })
     startGame()
@@ -475,6 +481,9 @@ export const useGameStore = defineStore('game', () => {
     } else {
       timeStore.resetTime()
     }
+    if (branchData.radioData) {
+      radioStore.loadSaveData(branchData.radioData)
+    }
 
     saveStore.saveGame({
       currentSceneId: currentSceneId.value,
@@ -485,7 +494,8 @@ export const useGameStore = defineStore('game', () => {
       unlockedHiddenMemories: [...unlockedHiddenMemories.value],
       currentChapterId: currentChapterId.value,
       moodData: moodStore.getSaveData(),
-      timeData: timeStore.getSaveData()
+      timeData: timeStore.getSaveData(),
+      radioData: radioStore.getSaveData()
     })
 
     gameState.value = 'playing'
@@ -517,6 +527,7 @@ export const useGameStore = defineStore('game', () => {
     timeStore.resetTime()
     letterStore.resetLetterSystem()
     characterStore.resetCharacterStore()
+    radioStore.resetRadio()
     saveStore.clearSave()
   }
 
@@ -551,8 +562,10 @@ export const useGameStore = defineStore('game', () => {
       if (challengeStore.isChallengeMode) {
         challengeStore.recordSceneVisit(sceneId)
       }
+      radioStore.recordSceneVisit(sceneId)
       musicStore.updateContext({ sceneId })
       saveProgress()
+      checkRadioQuestProgress()
       triggerFinalKeyChoiceIfReady()
     }
   }
@@ -584,6 +597,7 @@ export const useGameStore = defineStore('game', () => {
       letterStore.checkLetterUnlock(itemId)
 
       checkFogItemUnlocks()
+      checkRadioQuestProgress()
 
       archiveToGlobal()
       saveProgress()
@@ -1023,6 +1037,7 @@ export const useGameStore = defineStore('game', () => {
       moodData: moodStore.getSaveData(),
       timeData: timeStore.getSaveData(),
       letterData: letterStore.getLetterSaveData(),
+      radioData: radioStore.getSaveData(),
       challengeMode: challengeStore.isChallengeMode
     })
   }
@@ -1109,6 +1124,50 @@ export const useGameStore = defineStore('game', () => {
     letterStore.closeReplyModal()
     letterStore.closeEndingModal()
     resumeGame()
+  }
+
+  function openRadio() {
+    if (!radioStore.radioUnlocked) {
+      radioStore.unlockRadio()
+    }
+    radioStore.openRadio()
+    pauseGame()
+    radioStore.recordSceneVisit(currentSceneId.value)
+  }
+
+  function closeRadio() {
+    radioStore.closeRadio()
+    resumeGame()
+  }
+
+  function checkRadioQuestProgress() {
+    const gameStateSnapshot = {
+      currentChapterId: currentChapterId.value,
+      currentSceneId: currentSceneId.value,
+      foundItems: foundItems.value,
+      triggeredMemories: triggeredMemories.value,
+      currentTimePeriod: timeStore.currentTimePeriod,
+      moodStateId: moodStore.moodStateId
+    }
+
+    const updates = radioStore.checkQuestProgress(gameStateSnapshot)
+    
+    for (const update of updates) {
+      const quest = radioStore.currentContent
+      if (quest && quest.id === update.questId && quest.reward) {
+        const reward = quest.reward
+        if (reward.type === 'memory') {
+          triggerMoodChange('touched')
+        } else if (reward.type === 'ending_weight' && reward.value) {
+          for (const [weight, value] of Object.entries(reward.value)) {
+            endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
+          }
+          musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
+        }
+      }
+    }
+
+    return updates
   }
 
   return {
@@ -1274,6 +1333,14 @@ export const useGameStore = defineStore('game', () => {
     letterCloseModal: () => letterStore.closeLetterModal(),
     letterCloseReply: () => letterStore.closeReplyModal(),
     letterCloseEnding: () => letterStore.closeEndingModal(),
+    isRadioUnlocked: computed(() => radioStore.radioUnlocked),
+    isRadioOpen: computed(() => radioStore.isRadioOpen),
+    radioActiveQuestsCount: computed(() => radioStore.activeQuestCount),
+    radioTotalHeardFragments: computed(() => radioStore.totalHeardFragments),
+    radioTotalHeardRumors: computed(() => radioStore.totalHeardRumors),
+    openRadio,
+    closeRadio,
+    checkRadioQuestProgress,
     showCharacterProfile,
     newlyUnlockedCharacters,
     showCharacterUnlockNotice,
