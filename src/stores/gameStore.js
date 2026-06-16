@@ -112,6 +112,118 @@ export const useGameStore = defineStore('game', () => {
     })
   }
 
+  function initRadioCallbacks() {
+    radioStore.setOnContentPlayed((contentType, contentData) => {
+      applyRadioContentEffect(contentType, contentData)
+    })
+
+    radioStore.setOnQuestCompleted((questData) => {
+      applyRadioQuestReward(questData)
+    })
+  }
+
+  function syncRadioGameState() {
+    radioStore.updateGameStateReference({
+      currentChapterId: currentChapterId.value,
+      foundItems: foundItems.value,
+      triggeredMemories: triggeredMemories.value,
+      moodStateId: moodStore.moodStateId,
+      visitedScenes: radioStore.visitedScenes,
+      currentSceneId: currentSceneId.value,
+      currentTimePeriod: timeStore.currentTimePeriod
+    })
+  }
+
+  function applyRadioContentEffect(contentType, contentData) {
+    if (contentType === 'memory') {
+      if (contentData.memoryUnlock && !triggeredMemories.value.includes(contentData.memoryUnlock) && !unlockedHiddenMemories.value.includes(contentData.memoryUnlock)) {
+        unlockedHiddenMemories.value.push(contentData.memoryUnlock)
+      }
+      if (contentData.moodEffect) {
+        triggerMoodChange(contentData.moodEffect)
+      }
+      if (contentData.endingWeight) {
+        for (const [weight, value] of Object.entries(contentData.endingWeight)) {
+          endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
+        }
+        musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
+      }
+    }
+
+    if (contentType === 'rumor') {
+      if (contentData.unlocksMemory && !unlockedHiddenMemories.value.includes(contentData.unlocksMemory)) {
+        unlockedHiddenMemories.value.push(contentData.unlocksMemory)
+      }
+      if (contentData.unlocksItem && !foundItems.value.includes(contentData.unlocksItem)) {
+        foundItems.value.push(contentData.unlocksItem)
+        const memory = storyStore.getMemoryByItemId(contentData.unlocksItem)
+        if (memory && !triggeredMemories.value.includes(memory.id)) {
+          triggeredMemories.value.push(memory.id)
+        }
+        collectionStore.unlockRelicByBaseItem(contentData.unlocksItem)
+      }
+      if (contentData.moodEffect) {
+        triggerMoodChange(contentData.moodEffect)
+      }
+    }
+
+    if (contentType === 'story') {
+      if (contentData.moodEffect) {
+        triggerMoodChange(contentData.moodEffect)
+      }
+      if (contentData.endingWeight) {
+        for (const [weight, value] of Object.entries(contentData.endingWeight)) {
+          endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
+        }
+        musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
+      }
+    }
+
+    if (contentType === 'atmosphere') {
+      if (contentData.moodBoost) {
+        triggerMoodChange(contentData.moodBoost)
+      }
+    }
+
+    archiveToGlobal()
+    saveProgress()
+    checkChapterProgress()
+    checkCharacterUnlocks()
+  }
+
+  function applyRadioQuestReward(questData) {
+    if (!questData || !questData.reward) return
+
+    const reward = questData.reward
+    if (reward.type === 'memory' && reward.value) {
+      if (!triggeredMemories.value.includes(reward.value) && !unlockedHiddenMemories.value.includes(reward.value)) {
+        unlockedHiddenMemories.value.push(reward.value)
+        triggerMoodChange('touched')
+      }
+    }
+
+    if (reward.type === 'ending_weight' && reward.value) {
+      for (const [weight, value] of Object.entries(reward.value)) {
+        endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
+      }
+      musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
+    }
+
+    if (reward.type === 'item' && reward.value && !foundItems.value.includes(reward.value)) {
+      foundItems.value.push(reward.value)
+      const memory = storyStore.getMemoryByItemId(reward.value)
+      if (memory && !triggeredMemories.value.includes(memory.id)) {
+        triggeredMemories.value.push(memory.id)
+      }
+      collectionStore.unlockRelicByBaseItem(reward.value)
+    }
+
+    archiveToGlobal()
+    saveProgress()
+    checkChapterProgress()
+    checkCharacterUnlocks()
+  }
+
   const moodStateName = computed(() => moodStore.moodStateName)
   const moodStateColor = computed(() => moodStore.moodStateColor)
   const moodPercent = computed(() => moodStore.moodPercent)
@@ -329,6 +441,7 @@ export const useGameStore = defineStore('game', () => {
     }
 
     checkCharacterUnlocks()
+    syncRadioGameState()
     saveProgress()
   }
 
@@ -367,6 +480,7 @@ export const useGameStore = defineStore('game', () => {
 
   function startGame() {
     initLetterCallbacks()
+    initRadioCallbacks()
     const savedGame = saveStore.loadGame()
     if (savedGame) {
       currentSceneId.value = savedGame.currentSceneId
@@ -564,6 +678,7 @@ export const useGameStore = defineStore('game', () => {
       }
       radioStore.recordSceneVisit(sceneId)
       musicStore.updateContext({ sceneId })
+      syncRadioGameState()
       saveProgress()
       checkRadioQuestProgress()
       triggerFinalKeyChoiceIfReady()
@@ -597,6 +712,7 @@ export const useGameStore = defineStore('game', () => {
       letterStore.checkLetterUnlock(itemId)
 
       checkFogItemUnlocks()
+      syncRadioGameState()
       checkRadioQuestProgress()
 
       archiveToGlobal()
@@ -1130,6 +1246,7 @@ export const useGameStore = defineStore('game', () => {
     if (!radioStore.radioUnlocked) {
       radioStore.unlockRadio()
     }
+    syncRadioGameState()
     radioStore.openRadio()
     pauseGame()
     radioStore.recordSceneVisit(currentSceneId.value)
@@ -1151,20 +1268,12 @@ export const useGameStore = defineStore('game', () => {
     }
 
     const updates = radioStore.checkQuestProgress(gameStateSnapshot)
-    
-    for (const update of updates) {
-      const quest = radioStore.currentContent
-      if (quest && quest.id === update.questId && quest.reward) {
-        const reward = quest.reward
-        if (reward.type === 'memory') {
-          triggerMoodChange('touched')
-        } else if (reward.type === 'ending_weight' && reward.value) {
-          for (const [weight, value] of Object.entries(reward.value)) {
-            endingWeights.value[weight] = (endingWeights.value[weight] || 0) + value
-          }
-          musicStore.updateContext({ dominantEndingType: dominantEndingWeights.value[0]?.[0] || 'neutral' })
-        }
-      }
+
+    syncRadioGameState()
+
+    if (updates.length > 0) {
+      saveProgress()
+      checkChapterProgress()
     }
 
     return updates
@@ -1341,6 +1450,9 @@ export const useGameStore = defineStore('game', () => {
     openRadio,
     closeRadio,
     checkRadioQuestProgress,
+    applyRadioContentEffect,
+    applyRadioQuestReward,
+    syncRadioGameState,
     showCharacterProfile,
     newlyUnlockedCharacters,
     showCharacterUnlockNotice,

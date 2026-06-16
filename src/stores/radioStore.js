@@ -141,25 +141,55 @@ export const useRadioStore = defineStore('radio', () => {
 
   const totalHeardRumors = computed(() => heardRumors.value.length)
 
+  const _cachedGameState = ref({
+    currentChapterId: 1,
+    foundItems: [],
+    triggeredMemories: [],
+    moodStateId: 'calm',
+    visitedScenes: [],
+    currentSceneId: null,
+    currentTimePeriod: 'day'
+  })
+
+  const _onContentPlayed = ref(null)
+  const _onQuestCompleted = ref(null)
+
   function getGameStateSnapshot() {
-    return {
-      currentChapterId: 1,
-      foundItems: [],
-      triggeredMemories: [],
-      moodStateId: 'calm',
-      visitedScenes: visitedScenes.value
-    }
+    return { ..._cachedGameState.value }
   }
 
   function updateGameStateReference(gameState) {
+    const cache = { ..._cachedGameState.value }
     if (gameState.currentChapterId !== undefined) {
+      cache.currentChapterId = gameState.currentChapterId
     }
     if (gameState.foundItems) {
+      cache.foundItems = [...gameState.foundItems]
     }
     if (gameState.triggeredMemories) {
+      cache.triggeredMemories = [...gameState.triggeredMemories]
     }
     if (gameState.moodStateId !== undefined) {
+      cache.moodStateId = gameState.moodStateId
     }
+    if (gameState.visitedScenes) {
+      cache.visitedScenes = [...gameState.visitedScenes]
+    }
+    if (gameState.currentSceneId !== undefined) {
+      cache.currentSceneId = gameState.currentSceneId
+    }
+    if (gameState.currentTimePeriod !== undefined) {
+      cache.currentTimePeriod = gameState.currentTimePeriod
+    }
+    _cachedGameState.value = cache
+  }
+
+  function setOnContentPlayed(callback) {
+    _onContentPlayed.value = callback
+  }
+
+  function setOnQuestCompleted(callback) {
+    _onQuestCompleted.value = callback
   }
 
   function unlockRadio() {
@@ -209,6 +239,13 @@ export const useRadioStore = defineStore('radio', () => {
     }
     if (contentType === 'story' && !heardStories.value.includes(contentId)) {
       heardStories.value.push(contentId)
+    }
+
+    if (_onContentPlayed.value) {
+      const contentData = currentContent.value
+      if (contentData) {
+        _onContentPlayed.value(contentType, contentData)
+      }
     }
 
     showStaticEffect()
@@ -293,6 +330,13 @@ export const useRadioStore = defineStore('radio', () => {
     }
     if (!completedQuests.value.includes(questId)) {
       completedQuests.value.push(questId)
+    }
+
+    if (_onQuestCompleted.value) {
+      const questData = getRadioQuestById(questId)
+      if (questData) {
+        _onQuestCompleted.value(questData)
+      }
     }
   }
 
@@ -489,6 +533,8 @@ export const useRadioStore = defineStore('radio', () => {
     getSaveData,
     loadSaveData,
     resetRadio,
-    updateGameStateReference
+    updateGameStateReference,
+    setOnContentPlayed,
+    setOnQuestCompleted
   }
 })
